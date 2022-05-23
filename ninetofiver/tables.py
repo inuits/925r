@@ -375,6 +375,7 @@ class TimesheetOverviewTable(BaseTable):
     leave_hours = SummedHoursColumn(accessor='range_info.leave_hours')
     holiday_hours = SummedHoursColumn(accessor='range_info.holiday_hours')
     remaining_hours = SummedHoursColumn(accessor='range_info.remaining_hours')
+    sickness = SummedHoursColumn(accessor='range_info.sick_hours')
     attachments = tables.Column(accessor='timesheet.attachments', orderable=False)
     actions = tables.Column(accessor='timesheet', orderable=False, exclude_from_export=True)
 
