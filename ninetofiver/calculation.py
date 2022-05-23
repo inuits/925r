@@ -517,7 +517,6 @@ def get_range_info(users, from_date, until_date, daily=False, detailed=False, su
             try:
                 for leave_date in leave_date_data[str(current_date)][user.id]:
                     duration = leave_date.duration
-                    print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>{duration=}")
                     if leave_date.leave.leave_type.id in sickness_type_ids:
                         user_res['sick_hours'] += duration
                         day_res['sick_hours'] += duration
