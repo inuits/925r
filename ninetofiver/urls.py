@@ -112,6 +112,7 @@ urlpatterns += [
     path('admin/ninetofiver/report/timesheet_contract_overview/', views.admin_report_timesheet_contract_overview_view, name='admin_report_timesheet_contract_overview'),  # noqa
     path('admin/ninetofiver/report/timesheet_overview/', views.admin_report_timesheet_overview_view, name='admin_report_timesheet_overview'),  # noqa
     path('admin/ninetofiver/report/timesheet_monthly_overview/', views.TimesheetMonthlyOverviewView.as_view(), name='admin_report_timesheet_monthly_overview'),  # noqa
+    path('admin/ninetofiver/report/timesheet_overview_poland/', views.admin_report_timesheet_overview_poland_view, name='admin_report_timesheet_overview_poland'),  # noqa
     path('admin/ninetofiver/report/user_range_info/', views.admin_report_user_range_info_view, name='admin_report_user_range_info'),  # noqa
     path('admin/ninetofiver/report/user_leave_overview/', views.admin_report_user_leave_overview_view, name='admin_report_user_leave_overview'),  # noqa
     path('admin/ninetofiver/report/user_work_ratio_by_user/', views.admin_report_user_work_ratio_by_user_view, name='admin_report_user_work_ratio_by_user'),  # noqa

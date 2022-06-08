@@ -411,6 +411,22 @@ class TimesheetOverviewTable(BaseTable):
 
         return format_html('%s' % ('&nbsp;'.join(buttons)))
 
+class TimesheetOverviewPolandTable(TimesheetOverviewTable):
+    """Timesheet overview Poland table."""
+
+    class Meta(TimesheetOverviewTable.Meta):
+        pass
+
+    # sickness = SummedHoursColumn(accessor='range_info.sick_hours')
+    # sickness_dates = SummedHoursColumn(accessor='range_info.sick_hours')
+    vacation = SummedHoursColumn(accessor='range_info.vacation_hours')
+    vacation_dates = tables.Column(accessor='range_info.vacation_dates')
+    # unpaid = SummedHoursColumn(accessor='range_info.unpaid_hours')
+    # unpaid = SummedHoursColumn(accessor='range_info.unpaid_hours')
+    # blood_donation = SummedHoursColumn(accessor='range_info.blood_donation_hours')
+    # blood_donation_dates = SummedHoursColumn(accessor='range_info.blood_donation_hours')
+    # parental_leave = SummedHoursColumn(accessor='range_info.parental_leave_hours')
+    # parental_leave_dates = SummedHoursColumn(accessor='range_info.parental_leave_hours')
 
 class UserRangeInfoTable(BaseTable):
     """User range info table."""

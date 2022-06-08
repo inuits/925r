@@ -343,11 +343,14 @@ def admin_report_timesheet_contract_overview_view(request):
 
 
 @staff_member_required
-def admin_report_timesheet_overview_view(request):
+def admin_report_timesheet_overview_view(request, branch = False):
     """Timesheet overview report."""
     fltr = filters.AdminReportTimesheetOverviewFilter(request.GET, models.Timesheet.objects)
+
     timesheets = fltr.qs.select_related('user')
     company = fltr.data.get('user__employmentcontract__company', None)
+    contract_type = fltr.data.get('user__employmentcontract', None)
+
     year = int(fltr.data['year']) if fltr.data.get('year', None) else None
     month = int(fltr.data['month']) if fltr.data.get('month', None) else None
 
@@ -361,6 +364,9 @@ def admin_report_timesheet_overview_view(request):
                                          user__employmentcontract__ended_at__gte=period_start,
                                          user__employmentcontract__started_at__lte=period_end))
 
+    if contract_type:
+        timesheets = timesheets.filter(Q(user__employmentcontract=contract_type))
+
     data = []
     for timesheet in timesheets:
         date_range = timesheet.get_date_range()
@@ -373,7 +379,13 @@ def admin_report_timesheet_overview_view(request):
         })
 
     config = RequestConfig(request, paginate={'per_page': pagination.CustomizablePageNumberPagination.page_size * 4})
-    table = tables.TimesheetOverviewTable(data)
+
+    if(branch):
+        table = tables.TimesheetOverviewPolandTable(data)
+    else:
+        table = tables.TimesheetOverviewTable(data)
+
+
     config.configure(table)
 
 
@@ -382,14 +394,26 @@ def admin_report_timesheet_overview_view(request):
         exporter = TableExport(export_format, table)
         return exporter.response('table.{}'.format(export_format))
 
-    context = {
-        'title': _('Timesheet overview'),
-        'table': table,
-        'filter': fltr,
-    }
+    if(branch):
+        context = {
+            'title': _('Timesheet overview Poland'),
+            'table': table,
+            'filter': fltr,
+        }
+        return render(request, 'ninetofiver/admin/reports/timesheet_overview.pug', context)
+    else:
+        context = {
+            'title': _('Timesheet overview'),
+            'table': table,
+            'filter': fltr,
+        }
+        return render(request, 'ninetofiver/admin/reports/timesheet_overview.pug', context)
 
-    return render(request, 'ninetofiver/admin/reports/timesheet_overview.pug', context)
 
+@staff_member_required
+def admin_report_timesheet_overview_poland_view(request):
+    """Timesheet overview Poland report."""
+    return admin_report_timesheet_overview_view(request, branch=True)
 
 @staff_member_required
 def admin_report_user_range_info_view(request):

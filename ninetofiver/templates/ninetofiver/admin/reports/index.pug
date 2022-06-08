@@ -19,7 +19,10 @@ block content
         tr(scope="row")
           th
             a(href="{% url 'admin_report_timesheet_monthly_overview' %}?base_date={{ today|date:'Y-m-d' }}&fetch_previous=true") Timesheet monthly overview
-
+        tr(scope="row")
+          th
+            a(href="{% url 'admin_report_timesheet_overview_poland' %}?base_date={{ today|date:'Y-m-d' }}&fetch_previous=true") Timesheet overview Poland
+            
   div(class="module", style="width: 100%")
     table(style="width: 100%")
       caption Users
