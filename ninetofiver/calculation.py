@@ -444,12 +444,16 @@ def get_range_info(users, from_date, until_date, daily=False, detailed=False, su
         user_res['work_hours'] = 0
         user_res['holiday_hours'] = 0
         user_res['leave_hours'] = 0
-        # user_res['sick_hours'] = 0
+        user_res['sick_hours'] = 0
+        user_res['sick_dates'] = ''
         user_res['vacation_hours'] = 0
         user_res['vacation_dates'] = ''
-        # user_res['unpaid_hours'] = 0
-        # user_res['blood_donation_hours'] = 0
-        # user_res['parental_leave_hours'] = 0
+        user_res['unpaid_hours'] = 0
+        user_res['unpaid_dates'] = ''
+        user_res['blood_donation_hours'] = 0
+        user_res['blood_donation_dates'] = ''
+        user_res['parental_leave_hours'] = 0
+        user_res['parental_leave_dates'] = ''
         user_res['pending_leave_hours'] = 0
         user_res['performed_hours'] = 0
         user_res['remaining_hours'] = 0
@@ -469,12 +473,16 @@ def get_range_info(users, from_date, until_date, daily=False, detailed=False, su
             day_res['work_hours'] = 0
             day_res['holiday_hours'] = 0
             day_res['leave_hours'] = 0
-            # day_res['sick_hours'] = 0
+            day_res['sick_hours'] = 0
+            day_res['sick_dates'] = ''
             day_res['vacation_hours'] = 0
             day_res['vacation_dates'] = ''
-            # day_res['unpaid_hours'] = 0
-            # day_res['blood_donation_hours'] = 0
-            # day_res['parental_leave_hours'] = 0
+            day_res['unpaid_hours'] = 0
+            day_res['unpaid_dates'] = ''
+            day_res['blood_donation_hours'] = 0
+            day_res['blood_donation_dates'] = ''
+            day_res['parental_leave_hours'] = 0
+            day_res['parental_leave_dates'] = ''
             day_res['pending_leave_hours'] = 0
             day_res['performed_hours'] = 0
             day_res['remaining_hours'] = 0
@@ -529,16 +537,25 @@ def get_range_info(users, from_date, until_date, daily=False, detailed=False, su
             except KeyError:
                 pass
 
-            # # Sickness
-            # try:
-            #     for leave_date in leave_date_data[str(current_date)][user.id]:
-            #         duration = leave_date.duration
-            #         if leave_date.leave.leave_type.id in sickness_type_ids:
-            #             user_res['sick_hours'] += duration
-            #             day_res['sick_hours'] += duration
-            #         day_res['sickness'].append(leave_date.leave)
-            # except KeyError:
-            #     pass
+            # Sickness
+            try:
+                for leave_date in leave_date_data[str(current_date)][user.id]:
+                    duration = leave_date.duration
+                    if leave_date.leave.leave_type.id in sickness_type_ids:
+                        user_res['sick_hours'] += duration
+                        day_res['sick_hours'] += duration
+                        if (duration == 8.0):
+                            sick_date = str(leave_date.starts_at).split(' ')[0]
+                            user_res['sick_dates'] += f'{sick_date}, '
+                            day_res['sick_dates'] += f'{sick_date}, '
+                        else:
+                            starts_at = str(leave_date.starts_at).split('+')[0]
+                            ends_at = str(leave_date.ends_at).split('+')[0]
+                            user_res['sick_dates'] += f'{starts_at} - {ends_at}, '
+                            day_res['sick_dates'] += f'{starts_at} - {ends_at}, '
+                    day_res['sickness'].append(leave_date.leave)
+            except KeyError:
+                pass
 
             # Vacation
             try:
@@ -549,49 +566,76 @@ def get_range_info(users, from_date, until_date, daily=False, detailed=False, su
                         day_res['vacation_hours'] += duration
                         if(duration==8.0):
                             vacation_date = str(leave_date.starts_at).split(' ')[0]
-                            user_res['vacation_dates'] += f'{vacation_date} '
-                            day_res['vacation_dates'] += f'{vacation_date} '
+                            user_res['vacation_dates'] += f'{vacation_date}, '
+                            day_res['vacation_dates'] += f'{vacation_date}, '
                         else:
                             starts_at = str(leave_date.starts_at).split('+')[0]
                             ends_at = str(leave_date.ends_at).split('+')[0]
-                            user_res['vacation_dates'] += f'{starts_at} - {ends_at} '
-                            day_res['vacation_dates'] += f'{starts_at} - {ends_at} '
+                            user_res['vacation_dates'] += f'{starts_at} - {ends_at}, '
+                            day_res['vacation_dates'] += f'{starts_at} - {ends_at}, '
                     day_res['vacation'].append(leave_date.leave)
             except KeyError:
                 pass
 
-            # # Unpaid
-            # try:
-            #     for leave_date in leave_date_data[str(current_date)][user.id]:
-            #         duration = leave_date.duration
-            #         if leave_date.leave.leave_type.id in unpaid_type_ids:
-            #             user_res['unpaid_hours'] += duration
-            #             day_res['unpaid_hours'] += duration
-            #         day_res['unpaid'].append(leave_date.leave)
-            # except KeyError:
-            #     pass
+            # Unpaid
+            try:
+                for leave_date in leave_date_data[str(current_date)][user.id]:
+                    duration = leave_date.duration
+                    if leave_date.leave.leave_type.id in unpaid_type_ids:
+                        user_res['unpaid_hours'] += duration
+                        day_res['unpaid_hours'] += duration
+                        if (duration == 8.0):
+                            unpaid_date = str(leave_date.starts_at).split(' ')[0]
+                            user_res['unpaid_dates'] += f'{unpaid_date}, '
+                            day_res['unpaid_dates'] += f'{unpaid_date}, '
+                        else:
+                            starts_at = str(leave_date.starts_at).split('+')[0]
+                            ends_at = str(leave_date.ends_at).split('+')[0]
+                            user_res['unpaid_dates'] += f'{starts_at} - {ends_at}, '
+                            day_res['unpaid_dates'] += f'{starts_at} - {ends_at}, '
+                    day_res['unpaid'].append(leave_date.leave)
+            except KeyError:
+                pass
 
-            # # Blood Donation
-            # try:
-            #     for leave_date in leave_date_data[str(current_date)][user.id]:
-            #         duration = leave_date.duration
-            #         if leave_date.leave.leave_type.id in blood_donation_type_ids:
-            #             user_res['blood_donation_hours'] += duration
-            #             day_res['blood_donation_hours'] += duration
-            #         day_res['blood_donation'].append(leave_date.leave)
-            # except KeyError:
-            #     pass
+            # Blood Donation
+            try:
+                for leave_date in leave_date_data[str(current_date)][user.id]:
+                    duration = leave_date.duration
+                    if leave_date.leave.leave_type.id in blood_donation_type_ids:
+                        user_res['blood_donation_hours'] += duration
+                        day_res['blood_donation_hours'] += duration
+                        if (duration == 8.0):
+                            blood_donation_date = str(leave_date.starts_at).split(' ')[0]
+                            user_res['blood_donation_dates'] += f'{blood_donation_date}, '
+                            day_res['blood_donation_dates'] += f'{blood_donation_date}, '
+                        else:
+                            starts_at = str(leave_date.starts_at).split('+')[0]
+                            ends_at = str(leave_date.ends_at).split('+')[0]
+                            user_res['blood_donation_dates'] += f'{starts_at} - {ends_at}, '
+                            day_res['blood_donation_dates'] += f'{starts_at} - {ends_at}, '
+                    day_res['blood_donation'].append(leave_date.leave)
+            except KeyError:
+                pass
 
-            # # Parental Leave
-            # try:
-            #     for leave_date in leave_date_data[str(current_date)][user.id]:
-            #         duration = leave_date.duration
-            #         if leave_date.leave.leave_type.id in parental_leave_type_ids:
-            #             user_res['parental_leave_hours'] += duration
-            #             day_res['parental_leave_hours'] += duration
-            #         day_res['parental_leave'].append(leave_date.leave)
-            # except KeyError:
-            #     pass
+            # Parental Leave
+            try:
+                for leave_date in leave_date_data[str(current_date)][user.id]:
+                    duration = leave_date.duration
+                    if leave_date.leave.leave_type.id in parental_leave_type_ids:
+                        user_res['parental_leave_hours'] += duration
+                        day_res['parental_leave_hours'] += duration
+                        if (duration == 8.0):
+                            parental_leave_date = str(leave_date.starts_at).split(' ')[0]
+                            user_res['parental_leave_dates'] += f'{parental_leave_date}, '
+                            day_res['parental_leave_dates'] += f'{parental_leave_date}, '
+                        else:
+                            starts_at = str(leave_date.starts_at).split('+')[0]
+                            ends_at = str(leave_date.ends_at).split('+')[0]
+                            user_res['parental_leave_dates'] += f'{starts_at} - {ends_at}, '
+                            day_res['parental_leave_dates'] += f'{starts_at} - {ends_at}, '
+                    day_res['parental_leave'].append(leave_date.leave)
+            except KeyError:
+                pass
 
             # Activity performance
             try:

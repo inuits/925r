@@ -417,16 +417,16 @@ class TimesheetOverviewPolandTable(TimesheetOverviewTable):
     class Meta(TimesheetOverviewTable.Meta):
         pass
 
-    # sickness = SummedHoursColumn(accessor='range_info.sick_hours')
-    # sickness_dates = SummedHoursColumn(accessor='range_info.sick_hours')
-    vacation = SummedHoursColumn(accessor='range_info.vacation_hours')
+    sickness_hours = SummedHoursColumn(accessor='range_info.sick_hours')
+    sickness_dates = tables.Column(accessor='range_info.sick_dates')
+    vacation_hours = SummedHoursColumn(accessor='range_info.vacation_hours')
     vacation_dates = tables.Column(accessor='range_info.vacation_dates')
-    # unpaid = SummedHoursColumn(accessor='range_info.unpaid_hours')
-    # unpaid = SummedHoursColumn(accessor='range_info.unpaid_hours')
-    # blood_donation = SummedHoursColumn(accessor='range_info.blood_donation_hours')
-    # blood_donation_dates = SummedHoursColumn(accessor='range_info.blood_donation_hours')
-    # parental_leave = SummedHoursColumn(accessor='range_info.parental_leave_hours')
-    # parental_leave_dates = SummedHoursColumn(accessor='range_info.parental_leave_hours')
+    unpaid_hours = SummedHoursColumn(accessor='range_info.unpaid_hours')
+    unpaid_dates = tables.Column(accessor='range_info.unpaid_dates')
+    blood_donation_hours = SummedHoursColumn(accessor='range_info.blood_donation_hours')
+    blood_donation_dates = tables.Column(accessor='range_info.blood_donation_dates')
+    parental_leave = SummedHoursColumn(accessor='range_info.parental_leave_hours')
+    parental_leave_dates = tables.Column(accessor='range_info.parental_leave_dates')
 
 class UserRangeInfoTable(BaseTable):
     """User range info table."""
