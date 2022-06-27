@@ -233,8 +233,7 @@ class LeaveAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return (super().get_queryset(request)
                 .select_related('leave_type', 'user')
-                .prefetch_related('attachments')
-                .distinct())
+                .prefetch_related('attachments'))
 
     def get_formsets_with_inlines(self, request, obj=None):
         """Cache timesheets foreign-keys in inlines"""
