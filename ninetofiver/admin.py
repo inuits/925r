@@ -29,6 +29,7 @@ from rangefilter.filter import DateRangeFilter
 from rangefilter.filter import DateTimeRangeFilter
 
 from ninetofiver import models, redmine
+from ninetofiver.filters import CompanyFilter
 from ninetofiver.models import Timesheet
 from ninetofiver.templatetags.markdown import markdown
 from ninetofiver.utils import IntelligentManyToManyWidget
@@ -164,9 +165,9 @@ class EmploymentContractAdmin(admin.ModelAdmin):
     list_display = ('user', 'company', 'employment_contract_type', 'work_schedule', 'started_at', 'ended_at')
     list_filter = (
         EmploymentContractStatusFilter,
-        ('user', RelatedDropdownFilter),
-        ('company', RelatedDropdownFilter),
-        ('employment_contract_type', RelatedDropdownFilter),
+        AutocompleteFilterFactory('User', 'user'),
+        AutocompleteFilterFactory('Company', 'company'),
+        AutocompleteFilterFactory('Employment Contract Type', 'employment_contract_type'),
         ('started_at', DateRangeFilter),
         ('ended_at', DateRangeFilter)
     )
@@ -277,6 +278,18 @@ class LeaveAdmin(admin.ModelAdmin):
         return format_html('<br>'.join('<a href="%s">%s</a>'
                                        % (x.get_file_url(), str(x)) for x in list(obj.attachments.all())))
 
+    def company(self, obj):
+        """Company under which is user employed. If he is employed under more than one,
+        then the first one is shown in related column, but in filters, all his/her companies are used."""
+        company = models.Leave.objects.raw(f"""
+          SELECT DISTINCT 1 as id, ninetofiver_company.name as company
+from (((ninetofiver_leave INNER JOIN auth_user ON ninetofiver_leave.user_id = auth_user.id)
+INNER JOIN ninetofiver_employmentcontract ON ninetofiver_employmentcontract.user_id = auth_user.id)
+INNER JOIN ninetofiver_company on ninetofiver_employmentcontract.company_id = ninetofiver_company.id)
+WHERE ninetofiver_leave.user_id == {obj.user_id};
+                """)
+        return company[0].company or "None"
+
     def item_actions(self, obj):
         """Actions."""
         actions = []
@@ -299,17 +312,19 @@ class LeaveAdmin(admin.ModelAdmin):
         'description',
         'attachment',
         'item_actions',
+        'company',
     )
     list_filter = (
         'status',
         ('leave_type', RelatedDropdownFilter),
         AutocompleteFilterFactory('User', 'user'),
+        CompanyFilter,
         ('user__groups', RelatedDropdownFilter),
         ('leavedate__starts_at', DateTimeRangeFilter),
         ('leavedate__ends_at', DateTimeRangeFilter)
     )
     search_fields = ('user__username', 'user__first_name', 'user__last_name', 'leave_type__name', 'status',
-                     'leavedate__starts_at', 'leavedate__ends_at', 'description')
+                     'leavedate__starts_at', 'leavedate__ends_at', 'description', 'company')
     inlines = [
         LeaveDateInline,
     ]

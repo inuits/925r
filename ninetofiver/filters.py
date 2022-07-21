@@ -2,7 +2,7 @@
 import logging
 
 import django_filters
-from django.contrib.admin import widgets as admin_widgets
+from django.contrib.admin import SimpleListFilter, widgets as admin_widgets
 from django.contrib.auth import models as auth_models
 from django_select2 import forms as select2_widgets
 from django.utils.translation import gettext_lazy as _
@@ -11,6 +11,37 @@ from django_filters.rest_framework import FilterSet
 from ninetofiver import models
 
 logger = logging.getLogger(__name__)
+
+
+class CompanyFilter(SimpleListFilter):
+    title = 'company'
+    parameter_name = 'company'
+
+    def lookups(self, request, model_admin):
+        companies = model_admin.model.objects.raw(f"""
+          SELECT DISTINCT ninetofiver_company.id as id, ninetofiver_company.name as name
+from (((ninetofiver_leave INNER JOIN auth_user ON ninetofiver_leave.user_id = auth_user.id)
+INNER JOIN ninetofiver_employmentcontract ON ninetofiver_employmentcontract.user_id = auth_user.id)
+INNER JOIN ninetofiver_company on ninetofiver_employmentcontract.company_id = ninetofiver_company.id);
+                """)
+        return [(c.id, c.name) for c in companies]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            leaves = models.Leave.objects.raw(f"""
+                SELECT ninetofiver_leave.id as id, ninetofiver_leave.created_at, 
+                    ninetofiver_leave.updated_at, ninetofiver_leave.description, 
+                    ninetofiver_leave.leave_type_id, ninetofiver_leave.polymorphic_ctype_id, 
+                    ninetofiver_leave.user_id, ninetofiver_leave.status, ninetofiver_company.name
+                FROM (((ninetofiver_leave INNER JOIN auth_user ON ninetofiver_leave.user_id = 
+                auth_user.id)
+            INNER JOIN ninetofiver_employmentcontract ON ninetofiver_employmentcontract.user_id = auth_user.id)
+            INNER JOIN ninetofiver_company ON ninetofiver_employmentcontract.company_id = ninetofiver_company.id)
+            WHERE ninetofiver_company.id == {self.value()};
+            """)
+            return queryset.filter(id__in=[lv.id for lv in leaves])
+        if self.value() is None:
+            return queryset.all()
 
 
 # Filters for reports
