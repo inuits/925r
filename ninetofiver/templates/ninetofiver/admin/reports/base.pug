@@ -5,9 +5,9 @@ block breadcrumbs
     div(class="breadcrumbs")
         a(href="{% url 'admin:index' %}")
             | {% translate 'Home' %}
-        | &rsaquo;
+        | &rsaquo;&nbsp;
         a(href="{% url 'admin_report_index' %}")
-            | &nbsp; {% translate 'Reports' %}
+            | {% translate 'Reports' %}
         if title
             | &rsaquo; {{ title }}
 
