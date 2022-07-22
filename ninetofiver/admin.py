@@ -288,7 +288,8 @@ INNER JOIN ninetofiver_employmentcontract ON ninetofiver_employmentcontract.user
 INNER JOIN ninetofiver_company on ninetofiver_employmentcontract.company_id = ninetofiver_company.id)
 WHERE ninetofiver_leave.user_id == {obj.user_id};
                 """)
-        return company[0].company or "None"
+        company = "None" if len(company) == 0 else company[0].company
+        return company
 
     def item_actions(self, obj):
         """Actions."""
