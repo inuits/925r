@@ -442,7 +442,7 @@ class Dev(Base):
 
     REGISTRATION_OPEN = True
     
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 class Prod(Base):
