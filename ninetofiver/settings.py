@@ -79,6 +79,7 @@ class Base(Configuration):
         # deprecated in django 2.0, replaced by django_select2
         # 'django_admin_select2',
         'dal',
+        'crispy_bootstrap4',
         'dal_select2',
         'django.contrib.admin',
         'django.contrib.auth',
@@ -441,7 +442,7 @@ class Dev(Base):
 
     REGISTRATION_OPEN = True
     
-    # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 class Prod(Base):

@@ -1,19 +1,20 @@
 # Pull base image
-FROM python:3.8-slim-buster as builder
+FROM python:3.9-slim-bookworm as builder
 
 # install python project dependencies pre-requisites
 RUN apt-get update && \
-    apt-get install -y python-dev libldap2-dev libsasl2-dev libssl-dev && \
-    apt-get install -y gcc default-libmysqlclient-dev
+    apt-get install -y libldap2-dev libsasl2-dev libssl-dev && \
+    apt-get install -y gcc default-libmysqlclient-dev pkg-config
 
-# Set environment variables
-COPY requirements.txt requirements.txt
+# Copy Pipfile dependency list
+COPY Pipfile Pipfile
+COPY Pipfile.lock Pipfile.lock
 
 # Install pipenv
-RUN set -ex && pip install --upgrade pip
+RUN set -ex && pip install --upgrade pip && pip install pipenv
 
 # Install dependencies
-RUN set -ex && pip install -r requirements.txt
+RUN set -ex && pipenv install --system --deploy
 
 FROM builder as final
 WORKDIR /code
