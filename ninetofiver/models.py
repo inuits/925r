@@ -20,6 +20,7 @@ from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 from polymorphic.models import PolymorphicManager
 from polymorphic.models import PolymorphicModel
+from django_minio_backend import MinioBackend
 
 log = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ class Company(BaseModel):
     address = models.TextField(max_length=255)
     country = CountryField()
     internal = models.BooleanField(default=False)
-    logo = models.FileField(upload_to=generate_file_path, blank=True, null=True)
+    logo = models.FileField(upload_to=generate_file_path, blank=True, null=True, storage=MinioBackend(bucket_name="media"))
 
     class Meta(BaseModel.Meta):
         verbose_name_plural = 'companies'
@@ -501,7 +502,7 @@ class Attachment(BaseModel):
     user = models.ForeignKey(auth_models.User, on_delete=models.PROTECT)
     name = models.CharField(max_length=255)
     description = models.TextField(max_length=255, blank=True, null=True)
-    file = models.FileField(upload_to=generate_file_path)
+    file = models.FileField(upload_to=generate_file_path, storage=MinioBackend(bucket_name="media"))
     slug = models.SlugField(default=uuid.uuid4, editable=False)
 
     class Meta(BaseModel.Meta):

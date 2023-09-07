@@ -102,6 +102,7 @@ xlrd = "*"
 xlwt = "*"
 zipp = "*"
 crispy-bootstrap4 = "*"
+django-minio-backend = "*"
 
 [dev-packages]
 isort = "*"

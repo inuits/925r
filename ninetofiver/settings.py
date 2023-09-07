@@ -97,6 +97,7 @@ class Base(Configuration):
         'crispy_forms',
         'django_gravatar',
         'django_countries',
+        'django_minio_backend.apps.DjangoMinioBackendConfig',
         'rangefilter',
         'django_admin_listfilter_dropdown',
         'admin_auto_filters',
@@ -443,6 +444,19 @@ class Dev(Base):
     REGISTRATION_OPEN = True
     
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    
+    # Minio
+    MINIO_ENDPOINT = "minio:9000"
+    MINIO_ACCESS_KEY = "xdwEErV3ON3bMLw6IwVp" # change me
+    MINIO_SECRET_KEY = "o6JKaThCWpTaORDlI5lAM5ydUU6F8pdbbFX8E22I" # change me
+    MINIO_USE_HTTPS = False
+    MINIO_PUBLIC_BUCKETS = [
+        "media"
+    ]
+    MINIO_MEDIA_FILES_BUCKET = "media"
+    MINIO_CONSISTENCY_CHECK_ON_START = True
+    MINIO_EXTERNAL_ENDPOINT = "127.0.0.1:9000"    
+    MINIO_EXTERNAL_ENDPOINT_USE_HTTPS = False
 
 
 class Prod(Base):

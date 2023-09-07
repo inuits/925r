@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cf90cd2ace920e10c8e2182ab60464e52b6463d6eb4f40a56d21cf56f5b72f28"
+            "sha256": "add13b06d437e0cd7e0892dd90aa458ccc638f1efb241f6bc35ce59b004d687c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -451,6 +451,14 @@
             "index": "pypi",
             "version": "==1.1.0"
         },
+        "django-minio-backend": {
+            "hashes": [
+                "sha256:be9eb19dbe3ecaf5b6561b37ca90adde8bf735ab3557738de45edfe7ee172d46",
+                "sha256:fcb9031b1aa7ca5c5d08a512bbf03fb95ca03a5381a90cc60b8c8d9cc85b867c"
+            ],
+            "index": "pypi",
+            "version": "==3.5.0"
+        },
         "django-model-utils": {
             "hashes": [
                 "sha256:2e2e4f13e4f14613134a9777db7ad4265f59a1d8f1384107bcaa3028fe3c87c1",
@@ -743,6 +751,13 @@
             "index": "pypi",
             "version": "==2.1.3"
         },
+        "minio": {
+            "hashes": [
+                "sha256:56ecb1e7e0103d2dc212fb460fdb70ab2abb7fa5685db378429325d96d95587a",
+                "sha256:8073bed2b4b1853f3d69ab2f01a0de86264071083032985921201cfbb0950b15"
+            ],
+            "version": "==7.1.16"
+        },
         "mysqlclient": {
             "hashes": [
                 "sha256:004fe1d30d2c2ff8072f8ea513bcec235fd9b896f70dad369461d0ad7e570e98",
@@ -797,11 +812,11 @@
         },
         "phonenumberslite": {
             "hashes": [
-                "sha256:163a18e962e4a29ffd0bd523fa7aa60301bc7aa467bf0383bf3c4dac02097573",
-                "sha256:5d05d0f31f0838b1773c6093925c7c1ab3e98d98747db7c54a9385f8b6df5f71"
+                "sha256:09b07b32861f306dee10f17085afb3e058b4c179edf50deb94db4d4dd14235ff",
+                "sha256:f0840de9bfe5b8f10b6883d971dd81f3a53bed8210326a53266f11e8be3428c3"
             ],
             "index": "pypi",
-            "version": "==8.13.19"
+            "version": "==8.13.20"
         },
         "pyasn1": {
             "hashes": [
