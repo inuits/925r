@@ -187,7 +187,7 @@ class Company(BaseModel):
     def get_logo_url(self):
         """Get a URL to the logo."""
         http = "https://" if settings.MINIO_EXTERNAL_ENDPOINT_USE_HTTPS else "http://"
-        return f"{http}{settings.MINIO_EXTERNAL_ENDPOINT}/media/{self.file.name}" # TODO: will this work for private bucket? 🤨🤨🤨
+        return f"{http}{settings.MINIO_EXTERNAL_ENDPOINT}/media/{self.logo.name}" # TODO: will this work for private bucket? 🤨🤨🤨
 
 
 class WorkSchedule(BaseModel):
