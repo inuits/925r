@@ -109,6 +109,7 @@ isort = "*"
 pudb = "*"
 pylint = "*"
 tox = "*"
+minio = "*"
 
 [requires]
 python_version = "3.9"
