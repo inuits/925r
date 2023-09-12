@@ -351,7 +351,16 @@ class Base(Configuration):
     ROCKETCHAT_TIMESHEET_REMINDER_NOTIFICATION_ENABLED = values.Value(True)
     
     # minio storage
-    MINIO_EXTERNAL_ENDPOINT = "minio.example.com"
+    MINIO_ENDPOINT = "minio:9000"
+    MINIO_ACCESS_KEY = "minio" # change me in child class
+    MINIO_SECRET_KEY = "minio-client" # change me in child class
+    MINIO_USE_HTTPS = False
+    MINIO_PUBLIC_BUCKETS = [
+        "media"
+    ]
+    MINIO_MEDIA_FILES_BUCKET = "media"
+    MINIO_CONSISTENCY_CHECK_ON_START = False
+    MINIO_EXTERNAL_ENDPOINT = "127.0.0.1:9000"
     MINIO_EXTERNAL_ENDPOINT_USE_HTTPS = False
 
 
@@ -448,18 +457,6 @@ class Dev(Base):
     REGISTRATION_OPEN = True
     
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    
-    # Minio
-    MINIO_ENDPOINT = "minio:9000"
-    MINIO_ACCESS_KEY = "minio" # change me
-    MINIO_SECRET_KEY = "minio-client" # change me
-    MINIO_USE_HTTPS = False
-    MINIO_PUBLIC_BUCKETS = [
-        "media"
-    ]
-    MINIO_MEDIA_FILES_BUCKET = "media"
-    MINIO_CONSISTENCY_CHECK_ON_START = True
-    MINIO_EXTERNAL_ENDPOINT = "127.0.0.1:9000"
 
 
 class Prod(Base):
