@@ -197,12 +197,39 @@ class UserRelativeAdmin(admin.ModelAdmin):
     autocomplete_fields = ('user',)
 
 
+class AttachmentAdminForm(forms.ModelForm):
+    model = models.Attachment
+    def clean(self):
+        t = self.cleaned_data.get("type")
+        if t == "c" and not self.request.user.has_perm("ninetofiver.change_contract"):
+            raise forms.ValidationError("You are not allowed to create contract attachments")
+        elif t == "l" and not self.request.user.has_perm("ninetofiver.change_leave"):
+            raise forms.ValidationError("You are not allowed to create leave attachments")
+        return self.cleaned_data
+
 @admin.register(models.Attachment)
 class AttachmentAdmin(admin.ModelAdmin):
+    form = AttachmentAdminForm
+    
+    def get_form(self, request, *args, **kwargs):
+        form = super(AttachmentAdmin, self).get_form(request, *args, **kwargs)
+        form.request = request
+        return form
+    
     def link(self, obj):
         return format_html('<a href="%s">%s</a>' % (obj.get_file_url(), str(obj)))
 
-    list_display = ('__str__', 'user', 'name', 'description', 'file', 'slug', 'link')
+    def get_queryset(self, request):
+        qs = super(AttachmentAdmin, self).get_queryset(request)
+        if not request.user.has_perm("ninetofiver.change_leave"):
+            qs = qs.exclude(type="l")
+        if not request.user.has_perm("ninetofiver.change_contract"):
+            qs = qs.exclude(type="c")
+        return qs
+
+    list_display = ('__str__', 'user', 'name', 'description', 'file', 'slug', 'link', 'type')
+    list_filter = ["type"]
+    readonly_fields=('type',)
 
 
 @admin.register(models.Holiday)
@@ -237,12 +264,22 @@ class LeaveDateInline(admin.TabularInline):
 
         return formfield
 
+class LeaveAdminForm(forms.ModelForm):
+    model = models.Leave
+    
+    def clean(self):
+        if self.cleaned_data.get('attachments') is not None:
+            for att in self.cleaned_data.get('attachments'):
+                if att.type == "c":
+                    raise forms.ValidationError("You cannot add a non-leave attachment to a leave!")
+        return self.cleaned_data
 
 @admin.register(models.Leave)
 class LeaveAdmin(admin.ModelAdmin):
     """Leave admin."""
     change_form_template = "ninetofiver/admin/leave_changeform.html"
-
+    form = LeaveAdminForm
+    
     def get_queryset(self, request):
         return (
             super().get_queryset(request)
@@ -291,6 +328,7 @@ class LeaveAdmin(admin.ModelAdmin):
         """Attachment URLs."""
         return format_html('<br>'.join('<a href="%s">%s</a>'
                                        % (x.get_file_url(), str(x)) for x in list(obj.attachments.all())))
+
 
     def company(self, obj):
         """Company under which is user employed. If he is employed under more than one,
@@ -464,7 +502,14 @@ class ContractForm(forms.ModelForm):
             redmine_project_choices = cache.get_or_set('contract_admin_redmine_id_choices',
                                                     redmine.get_redmine_project_choices)
             self.fields['redmine_id'].widget = select2_widgets.Select2Widget(choices=redmine_project_choices)
-        
+    
+    def clean(self):
+        if self.cleaned_data.get('attachments') is not None:
+            for att in self.cleaned_data.get('attachments'):
+                log.info(att.type)
+                if att.type == "l":
+                    raise forms.ValidationError("You cannot add a non-contract attachment to a contract!")
+        return self.cleaned_data
 
 class ContractResource(ModelResource):
     """Contract resource."""

@@ -90,6 +90,25 @@ def on_timesheet_pre_save(sender, instance, created=False, **kwargs):
                     }
                 )
 
+@receiver(m2m_changed, sender=models.Leave.attachments.through)
+@receiver(m2m_changed, sender=models.Contract.attachments.through)
+def on_attachment_changed(sender, instance, action, pk_set, **kwargs):
+    """Changes type of attachment based on where it is added/removed"""
+    if action == "pre_add":
+        for pk in pk_set:
+            att = models.Attachment.objects.get(pk=pk)
+            #* Set type based on instance
+            if isinstance(instance,models.Leave):
+                att.type = models.Attachment.TYPE_LEAVE
+            elif isinstance(instance,models.Contract):
+                att.type = models.Attachment.TYPE_CONTRACT
+            att.save()
+    elif action == "pre_remove":
+        for pk in pk_set:
+            att = models.Attachment.objects.get(pk=pk)
+            att.type = models.Attachment.TYPE_NONE
+            att.save()
+    
 
 @receiver(pre_save, sender=models.ContractUserGroup)
 def on_contract_user_group_pre_save(sender, instance, created=False, **kwargs):
