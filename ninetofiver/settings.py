@@ -79,6 +79,7 @@ class Base(Configuration):
         # deprecated in django 2.0, replaced by django_select2
         # 'django_admin_select2',
         'dal',
+        'crispy_bootstrap4',
         'dal_select2',
         'django.contrib.admin',
         'django.contrib.auth',
@@ -96,6 +97,7 @@ class Base(Configuration):
         'crispy_forms',
         'django_gravatar',
         'django_countries',
+        'django_minio_backend.apps.DjangoMinioBackendConfig',
         'rangefilter',
         'django_admin_listfilter_dropdown',
         'admin_auto_filters',
@@ -347,6 +349,19 @@ class Base(Configuration):
     ROCKETCHAT_INCOMING_WEBHOOK_URL = values.Value(None)
     ROCKETCHAT_PERFORMANCE_REMINDER_NOTIFICATION_ENABLED = values.Value(True)
     ROCKETCHAT_TIMESHEET_REMINDER_NOTIFICATION_ENABLED = values.Value(True)
+    
+    # minio storage
+    MINIO_ENDPOINT = "minio:9000"
+    MINIO_ACCESS_KEY = "minio" # change me in child class
+    MINIO_SECRET_KEY = "minio-client" # change me in child class
+    MINIO_USE_HTTPS = False
+    MINIO_PUBLIC_BUCKETS = [
+        "media"
+    ]
+    MINIO_MEDIA_FILES_BUCKET = "media"
+    MINIO_CONSISTENCY_CHECK_ON_START = False
+    MINIO_EXTERNAL_ENDPOINT = "127.0.0.1:9000"
+    MINIO_EXTERNAL_ENDPOINT_USE_HTTPS = False
 
 
 class Dev(Base):
@@ -441,7 +456,7 @@ class Dev(Base):
 
     REGISTRATION_OPEN = True
     
-    # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 class Prod(Base):

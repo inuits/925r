@@ -20,6 +20,8 @@ from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 from polymorphic.models import PolymorphicManager
 from polymorphic.models import PolymorphicModel
+from django_minio_backend import MinioBackend
+from django.conf import settings
 
 log = logging.getLogger(__name__)
 
@@ -171,7 +173,7 @@ class Company(BaseModel):
     address = models.TextField(max_length=255)
     country = CountryField()
     internal = models.BooleanField(default=False)
-    logo = models.FileField(upload_to=generate_file_path, blank=True, null=True)
+    logo = models.FileField(upload_to=generate_file_path, blank=True, null=True, storage=MinioBackend(bucket_name=settings.MINIO_MEDIA_FILES_BUCKET))
 
     class Meta(BaseModel.Meta):
         verbose_name_plural = 'companies'
@@ -184,7 +186,8 @@ class Company(BaseModel):
 
     def get_logo_url(self):
         """Get a URL to the logo."""
-        return reverse('ninetofiver_api_v2:download_company_logo', kwargs={'pk': self.pk})
+        http = "https://" if settings.MINIO_EXTERNAL_ENDPOINT_USE_HTTPS else "http://"
+        return f"{http}{settings.MINIO_EXTERNAL_ENDPOINT}/media/{self.logo.name}" # TODO: will this work for private bucket? 🤨🤨🤨
 
 
 class WorkSchedule(BaseModel):
@@ -501,7 +504,7 @@ class Attachment(BaseModel):
     user = models.ForeignKey(auth_models.User, on_delete=models.PROTECT)
     name = models.CharField(max_length=255)
     description = models.TextField(max_length=255, blank=True, null=True)
-    file = models.FileField(upload_to=generate_file_path)
+    file = models.FileField(upload_to=generate_file_path, storage=MinioBackend(bucket_name=settings.MINIO_MEDIA_FILES_BUCKET))
     slug = models.SlugField(default=uuid.uuid4, editable=False)
 
     class Meta(BaseModel.Meta):
@@ -518,7 +521,8 @@ class Attachment(BaseModel):
 
     def get_file_url(self):
         """Get a URL to the file."""
-        return reverse('ninetofiver_api_v2:download_attachment', kwargs={'slug': self.slug})
+        http = "https://" if settings.MINIO_EXTERNAL_ENDPOINT_USE_HTTPS else "http://"
+        return f"{http}{settings.MINIO_EXTERNAL_ENDPOINT}/media/{self.file.name}" # TODO: will this work for private bucket? 🤨🤨🤨
 
 
 class Holiday(BaseModel):
