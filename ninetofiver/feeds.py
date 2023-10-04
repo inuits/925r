@@ -4,15 +4,15 @@ from django.db.models import Q
 from django_ical.views import ICalFeed
 from icalendar import vCalAddress
 from django_ical.views import ICAL_EXTRA_FIELDS
-from django_ical.feedgenerator import ITEM_EVENT_FIELD_MAP
+from django_ical.feedgenerator import ITEM_ELEMENT_FIELD_MAP
 from django_ical import feedgenerator
 from ninetofiver import models
 
 
 ICAL_EXTRA_FIELDS.append('status')
-ITEM_EVENT_FIELD_MAP += (('status', 'status'),)
-ITEM_EVENT_FIELD_MAP = [x for x in ITEM_EVENT_FIELD_MAP if x[0] != 'link']
-feedgenerator.ITEM_EVENT_FIELD_MAP = ITEM_EVENT_FIELD_MAP
+ITEM_ELEMENT_FIELD_MAP += (('status', 'status'),)
+ITEM_ELEMENT_FIELD_MAP = [x for x in ITEM_ELEMENT_FIELD_MAP if x[0] != 'link']
+feedgenerator.ITEM_ELEMENT_FIELD_MAP = ITEM_ELEMENT_FIELD_MAP
 
 
 class BaseFeed(ICalFeed):
