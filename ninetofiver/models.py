@@ -498,11 +498,17 @@ class Attachment(BaseModel):
         """Generate a file path."""
         return 'attachments/user_%s/%s/%s' % (instance.user.id, instance.slug, filename)
 
+    
+    TYPE_NONE = "n"
+    TYPE_LEAVE = "l"
+    TYPE_CONTRACT = "c"
+    
     user = models.ForeignKey(auth_models.User, on_delete=models.PROTECT)
     name = models.CharField(max_length=255)
     description = models.TextField(max_length=255, blank=True, null=True)
     file = models.FileField(upload_to=generate_file_path)
     slug = models.SlugField(default=uuid.uuid4, editable=False)
+    type = models.CharField(max_length=15,editable=False,default=(TYPE_NONE,_("No type")), choices=Choices((TYPE_NONE,_("No type")),(TYPE_LEAVE,_("Leave attachment")),(TYPE_CONTRACT,_("Contract attachment"))))
 
     class Meta(BaseModel.Meta):
         permissions = (
