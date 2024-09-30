@@ -276,13 +276,14 @@ class PerformanceTypeSerializer(BaseSerializer):
         )
 
 
-class LocationSerializer(BaseSerializer):
+class LocationSerializer(CountryFieldMixin, BaseSerializer):
     """Location serializer."""
 
     class Meta(BaseSerializer.Meta):
         model = models.Location
         fields = BaseSerializer.Meta.fields + (
             'name',
+            'country'
         )
 
 
@@ -660,4 +661,35 @@ class AttachmentSerializer(BasicSerializer):
             'file',
             'slug',
             'file_url',
+        )
+
+
+class EventSerializer(BaseSerializer):
+    """Event serializer."""
+
+    is_running = serializers.SerializerMethodField()
+
+    class Meta(BaseSerializer.Meta):
+        model = models.Event
+        fields = BaseSerializer.Meta.fields + (
+            'name',
+            'link',
+            'location',
+            'is_running',
+            'help_text',
+            'starts_at',
+            'ends_at',
+        )
+
+    def get_is_running(self, obj):
+        return obj.is_running
+
+class QuoteSerializer(BaseSerializer):
+    """Quote serializer."""
+
+    class Meta(BaseSerializer.Meta):
+        model = models.Quote
+        fields = BaseSerializer.Meta.fields + (
+            'quote',
+            'author',
         )

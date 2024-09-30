@@ -103,6 +103,7 @@ urlpatterns += [
     # Custom admin routes
     re_path(r'^admin/ninetofiver/leave/approve/(?P<leave_pk>[0-9,]+)/$', views.admin_leave_approve_view, name='admin_leave_approve'),  # noqa
     re_path(r'^admin/ninetofiver/leave/reject/(?P<leave_pk>[0-9,]+)/$', views.admin_leave_reject_view, name='admin_leave_reject'),  # noqa
+    re_path(r'^admin/ninetofiver/leave/bulkchange/(?P<leave_pk>[0-9,]+)/$', views.admin_leave_bulk_edit_dates, name='admin_leave_bulk_edit_dates'),
     re_path(r'^admin/ninetofiver/timesheet/close/(?P<timesheet_pk>[0-9,]+)/$', views.admin_timesheet_close_view, name='admin_timesheet_close'),  # noqa
     re_path(r'^admin/ninetofiver/timesheet/activate/(?P<timesheet_pk>[0-9,]+)/$', views.admin_timesheet_activate_view, name='admin_timesheet_activate'),  # noqa
     path('admin/ninetofiver/report/', views.admin_report_index_view, name='admin_report_index'),  # noqa

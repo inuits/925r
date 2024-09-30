@@ -21,7 +21,7 @@ from django_admin_listfilter_dropdown.filters import DropdownFilter
 from django_admin_listfilter_dropdown.filters import RelatedDropdownFilter
 from django_countries.filters import CountryFilter
 from import_export import fields
-from import_export.admin import ExportMixin
+from import_export.admin import ExportMixin, ImportMixin
 from import_export.fields import Field
 from import_export.resources import ModelResource
 from polymorphic.admin import PolymorphicChildModelAdmin
@@ -241,6 +241,7 @@ class LeaveDateInline(admin.TabularInline):
 @admin.register(models.Leave)
 class LeaveAdmin(admin.ModelAdmin):
     """Leave admin."""
+    change_form_template = "ninetofiver/admin/leave_changeform.html"
 
     def get_queryset(self, request):
         return (
@@ -299,7 +300,8 @@ class LeaveAdmin(admin.ModelAdmin):
 from (((ninetofiver_leave INNER JOIN auth_user ON ninetofiver_leave.user_id = auth_user.id)
 INNER JOIN ninetofiver_employmentcontract ON ninetofiver_employmentcontract.user_id = auth_user.id)
 INNER JOIN ninetofiver_company on ninetofiver_employmentcontract.company_id = ninetofiver_company.id)
-WHERE ninetofiver_leave.user_id = {obj.user_id};
+WHERE ninetofiver_leave.user_id = {obj.user_id} AND ninetofiver_employmentcontract.started_at < CURRENT_DATE() 
+AND (ninetofiver_employmentcontract.ended_at IS NULL OR ninetofiver_employmentcontract.ended_at > CURRENT_DATE());
                 """)
         company = "None" if len(company) == 0 else company[0].company
         return company
@@ -373,7 +375,7 @@ class UserInfoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         """Constructor."""
         super().__init__(*args, **kwargs)
-        
+
         if "redmine_id" in self.fields:
             self.fields['redmine_id'].label = 'Redmine user'
             redmine_user_choices = cache.get_or_set('user_info_admin_redmine_id_choices',
@@ -457,13 +459,13 @@ class ContractForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         """Constructor."""
         super().__init__(*args, **kwargs)
-        
+
         if "redmine_id" in self.fields:
             self.fields['redmine_id'].label = 'Redmine project'
             redmine_project_choices = cache.get_or_set('contract_admin_redmine_id_choices',
-                                                    redmine.get_redmine_project_choices)
+                                                       redmine.get_redmine_project_choices)
             self.fields['redmine_id'].widget = select2_widgets.Select2Widget(choices=redmine_project_choices)
-        
+
 
 class ContractResource(ModelResource):
     """Contract resource."""
@@ -606,7 +608,7 @@ class ContractParentAdmin(ExportMixin, PolymorphicParentModelAdmin):
         ('ends_at', DateRangeFilter),
         'active'
     )
-    search_fields = ('name', 'description', 'company__name', 'customer__name', 'contractuser__user__first_name',
+    search_fields = ('id', 'name', 'description', 'company__name', 'customer__name', 'contractuser__user__first_name',
                      'contractuser__user__last_name', 'contractuser__user__username', 'contractusergroup__group__name',
                      'performance_types__name')
     ordering = ('name', 'company', 'starts_at', 'ends_at', '-customer',)
@@ -638,7 +640,7 @@ class ContractChildAdmin(PolymorphicChildModelAdmin):
     list_filter = ContractParentAdmin.list_filter[1:]
     search_fields = ContractParentAdmin.search_fields
     ordering = ContractParentAdmin.ordering
-    filter_horizontal = ('attachments', "contract_groups", "performance_types", )
+    filter_horizontal = ('attachments', "contract_groups", "performance_types",)
     raw_id_fields = ("attachments",)
 
 
@@ -759,7 +761,7 @@ class TimesheetAdmin(admin.ModelAdmin):
     )
     ordering = ('-year', 'month', 'user__first_name', 'user__last_name')
     autocomplete_fields = ('user',)
-    filter_horizontal= ('attachments',)
+    filter_horizontal = ('attachments',)
     raw_id_fields = ("attachments",)
 
 
@@ -899,7 +901,7 @@ class PerformanceParentAdmin(ExportMixin, PolymorphicParentModelAdmin):
 
     def contract_role(self, obj):
         return obj.activityperformance.contract_role
-    
+
     @admin.action(description="Contract bulk change")
     def contract_bulk_change(self, request, queryset):
         if request.POST.get("do_action"):
@@ -933,7 +935,6 @@ class PerformanceParentAdmin(ExportMixin, PolymorphicParentModelAdmin):
                 "form": form,
             },
         )
-
 
     base_model = models.Performance
     child_models = (
@@ -977,11 +978,13 @@ class PerformanceInuitsKrkParentAdmin(ExportMixin, PolymorphicParentModelAdmin):
                                                          'contract__customer',
                                                          'timesheet',
                                                          'timesheet__user')
+
     def link(self, obj):
-        return mark_safe(f'<a href="{settings.BASE_URL}/admin/ninetofiver/performance/{obj.id}/change/">{obj}</a>')        
+        return mark_safe(f'<a href="{settings.BASE_URL}/admin/ninetofiver/performance/{obj.id}/change/">{obj}</a>')
+
     link.allow_tags = True
     link.short_description = "Performance"
-    
+
     def duration(self, obj):
         return obj.activityperformance.duration
 
@@ -1104,8 +1107,9 @@ class InvoiceAdmin(admin.ModelAdmin):
         ('period_starts_at', DateTimeRangeFilter),
         ('period_ends_at', DateTimeRangeFilter),
     )
-    search_fields = ('contract__name', 'reference', 'contract__name', 'contract__customer__name', 'contract__company__name',
-                     'description', 'date')
+    search_fields = (
+    'contract__name', 'reference', 'contract__name', 'contract__customer__name', 'contract__company__name',
+    'description', 'date')
     inlines = [
         InvoiceItemInline,
     ]
@@ -1227,3 +1231,47 @@ class UserTrainingAdmin(admin.ModelAdmin):
                 inlines.append(general_training_inline)
 
         return inlines
+
+
+@admin.register(models.Event)
+class EventAdmin(admin.ModelAdmin):
+    """Event admin"""
+
+    list_display = (
+        'name',
+        'location',
+        'starts_at',
+        'ends_at',
+    )
+
+    list_filter = [
+        'location',
+        ('starts_at', DateTimeRangeFilter),
+        ('ends_at', DateTimeRangeFilter),
+    ]
+
+    search_fields = (
+        'name',
+        'location',
+        'starts_at',
+        'ends_at',
+    )
+
+
+@admin.register(models.Quote)
+class QuoteAdmin(ImportMixin, admin.ModelAdmin):
+    """Quote admin"""
+
+    list_display = (
+        'quote',
+        'author',
+    )
+
+    search_fields = (
+        'quote',
+    )
+
+    def add_view(self, *args, **kwargs):
+        self.inlines = []
+        self.readonly_fields = []
+        return super(QuoteAdmin, self).add_view(*args, **kwargs)

@@ -5,15 +5,7 @@ block content
     p There {{ leave_count|pluralize:"is,are" }} {{ leave_count }} pending leave awaiting your approval.
     
     p
-        a(href='{{ settings.BASE_URL }}{% url "admin_leave_approve" leave_pk=leave_ids %}' style="
-            background: #79aec8;
-            border-radius: 4px;
-            color: #fff;
-            padding: 4px 5px;
-            text-decoration: none;
-        ") Approve all
-        | &nbsp;&nbsp;&nbsp;&nbsp;
-        a(href='{{ settings.BASE_URL }}/admin/ninetofiver/leave/?status__exact=pending' style="
+        a(href='{{ settings.BASE_URL }}/admin/ninetofiver/leave/?status__exact=pending&company={{ company_id }}' style="
             background: #79aec8;
             border-radius: 4px;
             color: #fff;

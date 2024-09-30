@@ -26,19 +26,19 @@ block content
       tbody
         tr(scope="row")
           th
-            a(href="{% url 'admin_report_user_range_info' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}&user={{ user.id }}") User range info
+            a(href="{% url 'admin_report_user_range_info' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}&user={{ user }}") User range info
         tr(scope="row")
           th
-            a(href="{% url 'admin_report_user_leave_overview' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}&user={{ user.id }}") User leave overview
+            a(href="{% url 'admin_report_user_leave_overview' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}&user={{ user }}") User leave overview
         tr(scope="row")
           th
             a(href="{% url 'admin_report_user_group_leave_overview' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}") User group leave overview
         tr(scope="row")
           th
-            a(href="{% url 'admin_report_user_work_ratio_overview' %}?year={{ today|date:'Y' }}&user={{ user.id }}") User work ratio overview
+            a(href="{% url 'admin_report_user_work_ratio_overview' %}?year={{ today|date:'Y' }}&user={{ user }}") User work ratio overview
         tr(scope="row")
           th
-            a(href="{% url 'admin_report_user_overtime_overview' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}&user={{ user.id }}") User overtime overview
+            a(href="{% url 'admin_report_user_overtime_overview' %}?from_date={{ last_week|date:'Y-m-d' }}&until_date={{ today|date:'Y-m-d' }}&user={{ user }}") User overtime overview
         tr(scope="row")
           th
             a(href="{% url 'admin_report_expiring_user_training_overview_view' %}") Expiring user training overview

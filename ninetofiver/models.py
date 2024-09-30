@@ -15,11 +15,13 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.utils import timezone
 from django_countries.fields import CountryField
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 from polymorphic.models import PolymorphicManager
 from polymorphic.models import PolymorphicModel
+from recurrence.fields import RecurrenceField
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +40,6 @@ auth_models.User.__str__ = user_str
 user_ordering = ['first_name', 'last_name']
 auth_models.User.Meta.ordering = user_ordering
 auth_models.User._meta.ordering = user_ordering
-
 
 # Genders
 GENDER_MALE = 'm'
@@ -188,7 +189,6 @@ class Company(BaseModel):
 
 
 class WorkSchedule(BaseModel):
-
     """
     Work schedule model.
 
@@ -267,7 +267,6 @@ class WorkSchedule(BaseModel):
 
 
 class EmploymentContractType(BaseModel):
-
     """Employment contract type model."""
 
     name = models.CharField(unique=True, max_length=255)
@@ -281,7 +280,6 @@ class EmploymentContractType(BaseModel):
 
 
 class EmploymentContract(BaseModel):
-
     """Employment contract model."""
 
     # noinspection PyMethodParameters
@@ -298,11 +296,11 @@ class EmploymentContract(BaseModel):
     def __str__(self):
         """Return a string representation."""
         return '%s [%s, %s]' % (self.user, self.company, self.employment_contract_type)
-    
+
     @property
     def is_active(self):
         if self.started_at <= datetime.date.today() and (
-            self.ended_at is None or self.ended_at >= datetime.date.today()
+                self.ended_at is None or self.ended_at >= datetime.date.today()
         ):
             return True
         else:
@@ -327,16 +325,16 @@ class EmploymentContract(BaseModel):
             existing = self.__class__.objects.filter(
                 models.Q(user=self.user, company=self.company) &
                 (
-                    models.Q(ended_at__isnull=True, started_at__lte=self.ended_at) |
-                    models.Q(ended_at__isnull=False, started_at__lte=self.ended_at, ended_at__gte=self.started_at)
+                        models.Q(ended_at__isnull=True, started_at__lte=self.ended_at) |
+                        models.Q(ended_at__isnull=False, started_at__lte=self.ended_at, ended_at__gte=self.started_at)
                 )
             )
         else:
             existing = self.__class__.objects.filter(
                 models.Q(user=self.user, company=self.company) &
                 (
-                    models.Q(ended_at__isnull=True) |
-                    models.Q(ended_at__isnull=False, started_at__lte=self.started_at, ended_at__gte=self.started_at)
+                        models.Q(ended_at__isnull=True) |
+                        models.Q(ended_at__isnull=False, started_at__lte=self.started_at, ended_at__gte=self.started_at)
                 )
             )
 
@@ -350,7 +348,6 @@ class EmploymentContract(BaseModel):
 
 
 class UserRelative(BaseModel):
-
     """User relative model."""
 
     GENDER_CHOICES = Choices(
@@ -382,7 +379,6 @@ class UserRelative(BaseModel):
 
 
 class UserInfo(BaseModel):
-
     """User info model."""
 
     GENDER_CHOICES = Choices(
@@ -427,7 +423,6 @@ class UserInfo(BaseModel):
 
 
 class Timesheet(BaseModel):
-
     """Timesheet model."""
 
     STATUS_CHOICES = Choices(
@@ -491,7 +486,6 @@ class Timesheet(BaseModel):
 
 
 class Attachment(BaseModel):
-
     """Attachment model."""
 
     def generate_file_path(instance, filename):
@@ -522,7 +516,6 @@ class Attachment(BaseModel):
 
 
 class Holiday(BaseModel):
-
     """Holiday model."""
 
     name = models.CharField(max_length=255)
@@ -538,7 +531,6 @@ class Holiday(BaseModel):
 
 
 class LeaveType(SortableMixin, BaseModel):
-
     """Leave type model."""
 
     name = models.CharField(unique=True, max_length=255)
@@ -556,7 +548,6 @@ class LeaveType(SortableMixin, BaseModel):
 
 
 class Leave(BaseModel):
-
     """Leave model."""
 
     STATUS_CHOICES = Choices(
@@ -583,11 +574,12 @@ class Leave(BaseModel):
 
 
 class LeaveDate(BaseModel):
-
     """Leave date model."""
 
-    leave = models.ForeignKey(Leave, on_delete=models.CASCADE, help_text="Use the magnifying glass icon to change the value!")
-    timesheet = models.ForeignKey(Timesheet, on_delete=models.PROTECT, help_text="Use the magnifying glass icon to change the value!")
+    leave = models.ForeignKey(Leave, on_delete=models.CASCADE,
+                              help_text="Use the magnifying glass icon to change the value!")
+    timesheet = models.ForeignKey(Timesheet, on_delete=models.PROTECT,
+                                  help_text="Use the magnifying glass icon to change the value!")
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
 
@@ -620,11 +612,11 @@ class LeaveDate(BaseModel):
 
         # Check whether the user already has leave planned during this time frame
         existing = (self.__class__.objects
-                    .exclude(leave__status=STATUS_REJECTED)
-                    .filter(
-                        models.Q(leave__user=self.leave.user) &
-                        models.Q(starts_at__lte=self.ends_at, ends_at__gte=self.starts_at)
-                    ))
+        .exclude(leave__status=STATUS_REJECTED)
+        .filter(
+            models.Q(leave__user=self.leave.user) &
+            models.Q(starts_at__lte=self.ends_at, ends_at__gte=self.starts_at)
+        ))
 
         if self.pk:
             existing = existing.exclude(id=self.pk)
@@ -637,7 +629,7 @@ class LeaveDate(BaseModel):
         # Verify timesheet this leave date is linked to is for the correct month/year
         if (self.starts_at.year != self.timesheet.year) or (self.starts_at.month != self.timesheet.month):
             raise ValidationError({'timesheet':
-                                  _('You cannot attach leave dates to a timesheet for a different month')})
+                                       _('You cannot attach leave dates to a timesheet for a different month')})
 
         # Verify timesheet this leave date is attached to isn't closed
         if self.timesheet.status != STATUS_ACTIVE:
@@ -646,7 +638,7 @@ class LeaveDate(BaseModel):
         # Verify linked timesheet and leave are for the same user
         if self.leave.user != self.timesheet.user:
             raise ValidationError({'leave':
-                                  _('You cannot attach leave dates to leaves and timesheets for different users')})
+                                       _('You cannot attach leave dates to leaves and timesheets for different users')})
 
         # # Verify linked leave is in draft mode
         # @TODO Re-enable this, but since leave dates are saved after leaves when using inlines in the admin interface,
@@ -663,7 +655,8 @@ class LeaveDate(BaseModel):
         label = str(self)
 
         if not self.requested_up_front():
-            label = '<span style="color:#f02311;font-weight:bold;" title="%s">(!)&nbsp;</span>%s' % (_('Not requested up front'), label)
+            label = '<span style="color:#f02311;font-weight:bold;" title="%s">(!)&nbsp;</span>%s' % (
+            _('Not requested up front'), label)
 
         return label
 
@@ -675,7 +668,6 @@ class LeaveDate(BaseModel):
 
 
 class PerformanceType(BaseModel):
-
     """Performance type model."""
 
     name = models.CharField(max_length=255)
@@ -699,7 +691,6 @@ class PerformanceType(BaseModel):
 
 
 class ContractGroup(BaseModel):
-
     """Contract group model."""
 
     name = models.CharField(max_length=255, unique=True)
@@ -710,7 +701,6 @@ class ContractGroup(BaseModel):
 
 
 class ContractLogType(BaseModel):
-
     """Contract log type model."""
 
     name = models.CharField(unique=True, max_length=255)
@@ -724,7 +714,6 @@ class ContractLogType(BaseModel):
 
 
 class ContractLog(BaseModel):
-
     """Contract log model."""
 
     date = models.DateField()
@@ -752,7 +741,6 @@ class ContractLog(BaseModel):
 
 
 class Contract(BaseModel):
-
     """Contract model."""
 
     # noinspection PyMethodParameters
@@ -789,7 +777,7 @@ class Contract(BaseModel):
     def get_absolute_url_view_name(self):
         """Get the view name used for generating an absolute URL."""
         return super().get_absolute_url_view_name(Contract)
-    
+
     @property
     def last_performance(self):
         """Return the last performance of the contract."""
@@ -797,7 +785,6 @@ class Contract(BaseModel):
 
 
 class ProjectContract(Contract):
-
     """Project contract model."""
 
     fixed_fee = models.DecimalField(
@@ -811,7 +798,6 @@ class ProjectContract(Contract):
 
 
 class ConsultancyContract(Contract):
-
     """Consultancy contract model."""
 
     duration = models.DecimalField(
@@ -837,7 +823,6 @@ class ConsultancyContract(Contract):
 
 
 class SupportContract(Contract):
-
     """Support contract model."""
 
     FIXED_FEE_PERIOD_CHOICES = Choices(
@@ -880,7 +865,6 @@ class SupportContract(Contract):
 
 
 class ContractRole(BaseModel):
-
     """Contract role model."""
 
     name = models.CharField(unique=True, max_length=255)
@@ -910,7 +894,8 @@ class ContractUser(BaseModel):
     """Contract user model."""
 
     user = models.ForeignKey(auth_models.User, on_delete=models.PROTECT)
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, help_text="Use the magnifying glass icon to change the value!")
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE,
+                                 help_text="Use the magnifying glass icon to change the value!")
     contract_role = models.ForeignKey(ContractRole, on_delete=models.PROTECT)
     contract_user_group = models.ForeignKey(ContractUserGroup, on_delete=models.CASCADE, editable=False, blank=True,
                                             null=True)
@@ -924,7 +909,6 @@ class ContractUser(BaseModel):
 
 
 class ContractUserWorkSchedule(BaseModel):
-
     """
     Contract user work schedule model.
 
@@ -1018,16 +1002,16 @@ class ContractUserWorkSchedule(BaseModel):
             existing = self.__class__.objects.filter(
                 models.Q(contract_user=self.contract_user) &
                 (
-                    models.Q(ends_at__isnull=True, starts_at__lte=self.ends_at) |
-                    models.Q(ends_at__isnull=False, starts_at__lte=self.ends_at, ends_at__gte=self.starts_at)
+                        models.Q(ends_at__isnull=True, starts_at__lte=self.ends_at) |
+                        models.Q(ends_at__isnull=False, starts_at__lte=self.ends_at, ends_at__gte=self.starts_at)
                 )
             )
         else:
             existing = self.__class__.objects.filter(
                 models.Q(contract_user=self.contract_user) &
                 (
-                    models.Q(ends_at__isnull=True) |
-                    models.Q(ends_at__isnull=False, starts_at__lte=self.starts_at, ends_at__gte=self.starts_at)
+                        models.Q(ends_at__isnull=True) |
+                        models.Q(ends_at__isnull=False, starts_at__lte=self.starts_at, ends_at__gte=self.starts_at)
                 )
             )
 
@@ -1038,11 +1022,10 @@ class ContractUserWorkSchedule(BaseModel):
 
         if existing:
             raise ValidationError({'starts_at':
-                                   _('The given contract user already has a work schedule for this period.')})
+                                       _('The given contract user already has a work schedule for this period.')})
 
 
 class ContractEstimate(BaseModel):
-
     """Contract estimate model."""
 
     contract_role = models.ForeignKey(ContractRole, on_delete=models.PROTECT, blank=True, null=True)
@@ -1066,11 +1049,11 @@ class ContractEstimate(BaseModel):
 
 
 class Location(SortableMixin, BaseModel):
-
     """Location model."""
 
     name = models.CharField(unique=True, max_length=255)
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
+    country = CountryField(default=None, blank=True, null=True)
 
     class Meta(BaseModel.Meta):
         ordering = ['order']
@@ -1081,10 +1064,10 @@ class Location(SortableMixin, BaseModel):
 
 
 class Whereabout(BaseModel):
-
     """Whereabout model."""
 
-    timesheet = models.ForeignKey(Timesheet, on_delete=models.PROTECT, help_text="Use the magnifying glass icon to change the value!")
+    timesheet = models.ForeignKey(Timesheet, on_delete=models.PROTECT,
+                                  help_text="Use the magnifying glass icon to change the value!")
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     description = models.TextField(max_length=255, blank=True, null=True)
     starts_at = models.DateTimeField()
@@ -1123,7 +1106,7 @@ class Whereabout(BaseModel):
         # Verify timesheet this whereabout is linked to is for the correct month/year
         if (self.starts_at.year != self.timesheet.year) or (self.starts_at.month != self.timesheet.month):
             raise ValidationError({'timesheet':
-                                  _('You cannot attach whereabouts to a timesheet for a different month')})
+                                       _('You cannot attach whereabouts to a timesheet for a different month')})
 
         # Verify timesheet this whereabout is attached to isn't closed
         if self.timesheet.status != STATUS_ACTIVE:
@@ -1131,12 +1114,12 @@ class Whereabout(BaseModel):
 
 
 class Performance(BaseModel):
-
     """Performance model."""
 
     timesheet = models.ForeignKey(Timesheet, on_delete=models.PROTECT)
     date = models.DateField()
-    contract = models.ForeignKey(Contract, on_delete=models.PROTECT, null=True, help_text="Use the magnifying glass icon to change the value!")
+    contract = models.ForeignKey(Contract, on_delete=models.PROTECT, null=True,
+                                 help_text="Use the magnifying glass icon to change the value!")
     redmine_id = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
@@ -1167,7 +1150,6 @@ class PerformanceInuitsKrk(Performance):
 
 
 class ActivityPerformance(Performance):
-
     """Activity performance model."""
 
     performance_type = models.ForeignKey(PerformanceType, on_delete=models.PROTECT)
@@ -1198,7 +1180,7 @@ class ActivityPerformance(Performance):
                                                   contract_role=self.contract_role).count()
             if not allowed:
                 raise ValidationError({'contract_role':
-                                      _('The selected contract role is not valid for that user on that contract.')})
+                                           _('The selected contract role is not valid for that user on that contract.')})
 
         if self.contract:
             # Ensure the performance type is valid for the contract
@@ -1207,10 +1189,10 @@ class ActivityPerformance(Performance):
 
             if allowed_types and (self.performance_type not in allowed_types):
                 raise ValidationError({'performance_type':
-                                      _('The selected performance type is not valid for the selected contract')})
+                                           _('The selected performance type is not valid for the selected contract')})
             if not active:
                 raise ValidationError({'contract':
-                                      _('Contract is not active')})
+                                           _('Contract is not active')})
 
     @property
     def normalized_duration(self):
@@ -1239,13 +1221,13 @@ class StandbyPerformance(Performance):
 
         if existing:
             raise ValidationError({'date':
-                                  _('The standby performance is already linked to that contract for that date.')})
+                                       _('The standby performance is already linked to that contract for that date.')})
 
         if self.contract:
             # Ensure that contract is a support contract
             if self.contract.get_real_instance_class() != SupportContract:
                 raise ValidationError({'contract':
-                                      _('Standy performances can only be created for support contracts.')})
+                                           _('Standy performances can only be created for support contracts.')})
 
 
 class Invoice(BaseModel):
@@ -1381,3 +1363,58 @@ class Training(BaseModel):
         #
         # if validation_error_dict:
         #     raise ValidationError(validation_error_dict)
+
+
+class Event(BaseModel):
+    name = models.CharField(max_length=255)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    link = models.URLField(blank=True, null=True)
+    help_text = models.CharField(max_length=255, blank=True, null=True)
+    starts_at = models.DateTimeField(default=datetime.datetime.now)
+    ends_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        """Return a string representation."""
+        return '%s' % self.name
+
+    @property
+    def is_running(self):
+        if self.starts_at <= timezone.now() <= self.ends_at:
+            return True
+        else:
+            return False
+
+    def perform_additional_validation(self):
+        """Perform additional validation on the object."""
+        super().perform_additional_validation()
+
+        if not self.starts_at:
+            raise ValidationError({'starts_at': _('The start date should be set')})
+
+        if not self.ends_at:
+            raise ValidationError({'ends_at': _('The end date should be set')})
+
+        if self.starts_at > self.ends_at:
+            raise ValidationError({'starts_at': _('The start date should be set before or equal to the end date')})
+
+
+class Quote(BaseModel):
+    """Quote model."""
+
+    quote = models.TextField()
+    author = models.CharField(max_length=255)
+    recurrences = RecurrenceField(blank=True, null=True, include_dtstart=True, help_text='RDATE:YYYYMMDDTHHMMSSZ\nhttps://jkbrzt.github.io/rrule/')
+
+    def __str__(self):
+        """Return a string representation."""
+        return '%s' % self.quote
+
+    @property
+    def is_today(self):
+        if self.recurrences.between(
+                datetime.datetime.combine(datetime.date.today(), datetime.time.min),
+                datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+        ):
+            return True
+    
+        return False

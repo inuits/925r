@@ -63,5 +63,6 @@ class Command(BaseCommand):
                             "leaves": recipient_pending_leaves,
                             "leave_ids": ",".join([str(x.id) for x in pending_leaves]),
                             "leave_count": len(recipient_pending_leaves),
+                            'company_id': recipient_company.id
                         },
                     )

@@ -46,5 +46,7 @@ urlpatterns += [
         path('imports/performances/', views.PerformanceImportAPIView.as_view()),
         path('range_info/', views.RangeInfoAPIView.as_view()),
         path('range_availability/', views.RangeAvailabilityAPIView.as_view()),
+        path('events/', views.EventsAPIView.as_view()),
+        path('quotes/', views.QuotesAPIView.as_view()),
     ])),
 ]

@@ -38,7 +38,8 @@ INNER JOIN ninetofiver_company on ninetofiver_employmentcontract.company_id = ni
                 auth_user.id)
             INNER JOIN ninetofiver_employmentcontract ON ninetofiver_employmentcontract.user_id = auth_user.id)
             INNER JOIN ninetofiver_company ON ninetofiver_employmentcontract.company_id = ninetofiver_company.id)
-            WHERE ninetofiver_company.id = {self.value()};
+            WHERE ninetofiver_company.id = {self.value()} AND ninetofiver_employmentcontract.started_at < CURRENT_DATE() 
+            AND (ninetofiver_employmentcontract.ended_at IS NULL OR ninetofiver_employmentcontract.ended_at > CURRENT_DATE());
             """)
             return queryset.filter(id__in=[lv.id for lv in leaves])
         if self.value() is None:
@@ -407,7 +408,7 @@ class AdminReportProjectContractOverviewFilter(FilterSet):
     contract_ptr = (django_filters.ModelMultipleChoiceFilter(
         label='Contract',
         field_name='contract_ptr',
-        queryset=models.ProjectContract.objects.filter(active=True),
+        queryset=models.ProjectContract.objects.all(),
         distinct=True,
         widget=select2_widgets.Select2MultipleWidget,
     ))

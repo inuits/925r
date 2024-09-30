@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import models as auth_models, mixins as auth_mixins
 from django.contrib.auth.decorators import login_required
@@ -14,7 +15,7 @@ from django.db.models import Q, F, Sum, Max, DecimalField
 from django.forms.models import modelform_factory
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views import View
@@ -26,12 +27,13 @@ from rest_framework import permissions
 from wkhtmltopdf.views import PDFTemplateView
 from dal import autocomplete
 
-from ninetofiver import filters
+from ninetofiver import filters, settings
 from ninetofiver import models
 from ninetofiver import tables, calculation, pagination
 from ninetofiver import redmine
 from ninetofiver.models import ContractLog, Contract
 from ninetofiver.utils import month_date_range, dates_in_range, hours_to_days
+from .forms import LeaveDatePrefillForm
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +202,95 @@ def admin_leave_approve_view(request, leave_pk):
 
     return render(request, 'ninetofiver/admin/leaves/approve.pug', context)
 
+@staff_member_required
+def admin_leave_bulk_edit_dates(request, leave_pk):
+    leave = models.Leave.objects.get(pk=leave_pk)
+    if request.POST.get("do_action"):
+        form = LeaveDatePrefillForm(data=request.POST, user=leave.user)
+        if form.is_valid():
+            leavedates = models.LeaveDate.objects.filter(leave=leave)
+            return render(
+                request,
+                "admin/actions/action_bulkchange_leaves_confirm.html",
+                {
+                    "title": "Confirm the change",
+                    "leavedates": leavedates,
+                    "leave":leave,
+                    "form": form,
+                },
+            )
+    elif request.POST.get("confirm"):
+        form = LeaveDatePrefillForm(data=request.POST, user=leave.user)
+        if form.is_valid():
+            #* delete all previous leavedates
+            leavedates = models.LeaveDate.objects.filter(leave=leave)
+            for leavedate in leavedates:
+                leavedate.delete()
+            start_date = form.cleaned_data["from_date"]
+            end_date = form.cleaned_data["to_date"]
+            # lent from api_v2/serializers.py
+            leave_date_count = (end_date - start_date).days + 1
+            employment_contract = None
+            leave_dates = []
+            #* Get leavedate ranges
+            for i in range(leave_date_count):
+                # Determine date for this day
+                current_dt = datetime.combine(start_date, datetime.min.time()) + timedelta(days=i)
+                current_date = current_dt.date()
+                if ((not employment_contract) or (employment_contract.started_at > current_date) or
+                        (employment_contract.ended_at and (employment_contract.ended_at < current_date))):
+                    employment_contract = models.EmploymentContract.objects.filter(
+                        Q(user=leave.user, started_at__lte=current_date) &
+                        (Q(ended_at__isnull=True) | Q(ended_at__gte=current_date))
+                    ).first()
+                    work_schedule = employment_contract.work_schedule if employment_contract else None
+
+                # Determine amount of hours to work on this day based on work schedule
+                work_hours = 0.00
+                if work_schedule:
+                    work_hours = float(getattr(work_schedule, current_date.strftime('%A').lower(), Decimal(0.00)))
+
+                # Determine existence of holidays on this day based on work schedule
+                holiday = None
+                if employment_contract:
+                    holiday = models.Holiday.objects.filter(date=current_date,
+                                                            country=employment_contract.company.country).first()
+
+                # If we have to work a certain amount of hours on this day, and there is no holiday on that day,
+                # add a leave date pair for that amount of hours
+                if (work_hours > 0.0) and (not holiday):
+                    # Ensure the leave starts when the working day does
+                    pair_starts_at = current_dt.replace(hour=settings.DEFAULT_WORKING_DAY_STARTING_HOUR, minute=0,
+                                                        second=1)
+                    # Add work hours to pair start to obtain pair end
+                    pair_ends_at = pair_starts_at.replace(hour=int(pair_starts_at.hour + work_hours),
+                                                          minute=int((work_hours % 1) * 60), second=0)
+                    # Log pair
+                    leave_dates.append([pair_starts_at, pair_ends_at])
+            if not leave_dates:
+                messages.error(request, "No leave dates to change for this period")
+            timesheet = None
+            for pair in leave_dates:
+                # Determine timesheet to use
+                if (not timesheet) or ((timesheet.year != pair[0].year) or (timesheet.month != pair[0].month)):
+                    timesheet = models.Timesheet.objects.get_or_create(user=leave.user, year=pair[0].year,
+                                                                    month=pair[0].month)[0]
+
+                models.LeaveDate.objects.create(leave=leave, timesheet=timesheet, starts_at=pair[0],
+                                                ends_at=pair[1])
+            messages.success(request, "Successfully changed LeaveDates")
+            return redirect(reverse("admin:ninetofiver_leave_change", args=[leave_pk]))
+    else:
+        form = LeaveDatePrefillForm(user=leave.user)
+    return render(
+            request,
+            "admin/actions/action_bulkchange_leavedate.html",
+            {
+                "title": "Change leave dates in bulk",
+                "form": form,
+                "leave":leave
+            },
+        )
 
 @staff_member_required
 def admin_leave_reject_view(request, leave_pk):
@@ -410,7 +501,7 @@ def admin_report_contract_logs_overview_view(request):
     return render(
         request, "ninetofiver/admin/reports/timesheet_contract_overview.pug", context
     )
-    
+
 @staff_member_required
 def admin_report_timesheet_overview_view(request):
     """Timesheet overview report."""
@@ -437,10 +528,13 @@ def admin_report_timesheet_overview_view(request):
         date_range = timesheet.get_date_range()
         range_info = calculation.get_range_info([timesheet.user], date_range[0], date_range[1])
         range_info = range_info[timesheet.user.id]
+        range_info_to_day = calculation.get_range_info([timesheet.user], date_range[0], datetime.now().date())
+        range_info_to_day = range_info_to_day[timesheet.user.id]
 
         data.append({
             'timesheet': timesheet,
             'range_info': range_info,
+            'range_info_to_day': range_info_to_day,
         })
 
     config = RequestConfig(request, paginate={'per_page': pagination.CustomizablePageNumberPagination.page_size * 4})
@@ -516,9 +610,9 @@ def admin_report_user_leave_group_overview_view(request):
     until_date = parser.parse(request.GET.get('until_date', None)).date() if request.GET.get('until_date') else None
     data = []
 
-    if from_date and until_date and (until_date >= from_date):    
+    if from_date and until_date and (until_date >= from_date):
         leave_types = models.LeaveType.objects.all()
-        
+
         # Grab leave dates, sort them in a dict per user, then by leave type while summing them
         leave_dates = models.LeaveDate.objects.filter(leave__status=models.STATUS_APPROVED,starts_at__gte=from_date,ends_at__lte=until_date.replace(day=until_date.day+1))
         leave_date_data = {}
@@ -550,7 +644,7 @@ def admin_report_user_leave_group_overview_view(request):
         for u in leave_date_data.keys():
             data.append(leave_date_data[u])
         logger.debug(len(leave_date_data.keys()))
-            
+
     config = RequestConfig(request, paginate={'per_page': pagination.CustomizablePageNumberPagination.page_size})
     table = tables.UserGroupLeaveOverviewTable(data)
     config.configure(table)
@@ -1223,7 +1317,7 @@ def admin_report_invoiced_consultancy_contract_overview_view(request):
         for performed_hour in performed_hours:
             if performed_hour['contract'].id == performance.contract.id:
                 performed_hour['duration'] = performed_hour['duration'] + ( performance.duration * performance.performance_type.multiplier )
-                performed_hour['users'].add(performance.timesheet.user) 
+                performed_hour['users'].add(performance.timesheet.user)
                 contract_already_added = True
 
         if not contract_already_added:
@@ -1628,7 +1722,7 @@ def admin_report_project_contract_budget_overview_view(request):
     if True in map(bool, list(fltr.data.values())):
         contracts = (fltr.qs.all()
                     .select_related('customer')
-                    .filter(active=True)
+                    .filter()
                     # Ensure contracts where the internal company and the customer are the same are filtered out
                     # These are internal contracts to cover things such as meetings, talks, etc..
                     .exclude(customer=F('company')))

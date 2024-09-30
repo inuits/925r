@@ -1,0 +1,35 @@
+{% extends "../base.html" %} {% load markdown static %} {% block content %}
+<form action="" method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="admin_leave_bulk_edit_dates" />
+  <input type="hidden" name="do_action" value="yes" />
+  <p>This form will overwrite <strong>all</strong> LeaveDates for a specified Leave with the date range specified in this form.</p>
+  <div>
+    {{ form }}
+    <input type="submit" class="default" style="float: none" value="Change" />
+  </div>
+
+  <h2> This will change the LeaveDates in the following Leave:</h2>
+  <a href="{% url 'admin:ninetofiver_leave_change' leave.id %}" style="font-size:16px;"> {{ leave.leave_type }} for user {{ leave.user }}</a>
+  {% if leave.description %}<p>Description: {{ leave.description }}</p>{% endif %}
+  {% comment %} <h2>Change contract in:</h2>
+
+  <ul>
+    {% for object in objects %}
+    <li>
+      <h3>{{ object.description | markdown }}</h3> 
+        ID {{ object.id }} - {{ object }} - <i>{{ object.timesheet }}</i> - {{ object.contract }}
+      <br />
+      {% if object.timesheet.status == 'closed' %}
+      <strong> ! Warning - performance's timesheet is closed </strong>
+      {% endif %}
+      <input type="hidden" name="_selected_action" value="{{ object.pk }}" />
+    </li>
+    {% endfor %}
+  </ul> {% endcomment %}
+</form>
+
+<script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+
+{{ form.media }}
+{% endblock %}

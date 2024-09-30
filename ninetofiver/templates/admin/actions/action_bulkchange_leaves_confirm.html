@@ -1,0 +1,41 @@
+{% extends "../base.html" %}
+{% load markdown %}
+
+
+{% block content %}
+    <form action="" method="post">
+
+        {% csrf_token %}
+        <input type="hidden" name="action" value="admin_leave_bulk_edit_dates">
+        <input type="hidden" name="confirm" value="yes">
+        <h2>This will DELETE the following LeaveDates associated with the selected leave</h2>
+        <h3>Selected Leave:</h3>
+        <a href="{% url 'admin:ninetofiver_leave_change' leave.id %}" style="font-size:16px;"> {{ leave.leave_type }} for user {{ leave.user }}</a>
+        {% if leave.description %}<p>Description: {{ leave.description }}</p>{% endif %}
+        <h3>LeaveDates to be deleted:</h3>
+        <ul>
+            {% for object in leavedates %}
+                <li>
+                    <h3>{{ object.description | markdown }}</h3> 
+                    ID {{ object.id }} - {{ object }}
+                    <br>
+                </li>
+            {% endfor %}
+        </ul>
+        <hr>
+        <br>
+        <div>
+            {{ form.from_date.as_hidden }}
+            {{ form.to_date.as_hidden }}
+            <br>
+            <br>
+            <input type="submit" class="default" style="float: none" value="Confirm">
+            <br>
+            <br>
+            <a href="."> Cancel </a>
+            {{ form.from_date.errors }}
+            {{ form.to_date.errors }}
+        </div>
+
+    </form>
+{% endblock %}

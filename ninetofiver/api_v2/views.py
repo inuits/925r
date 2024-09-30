@@ -1,5 +1,7 @@
 """925r API v2 views."""
 import datetime
+import logging
+
 import dateutil
 from django.contrib.auth import models as auth_models
 from django.core.exceptions import ValidationError
@@ -13,6 +15,8 @@ from ninetofiver.api_v2 import serializers, filters
 from ninetofiver import models, feeds, calculation, redmine
 from ninetofiver.views import BaseTimesheetContractPdfExportServiceAPIView
 from ninetofiver.exceptions import InvalidRedmineUserException
+
+log = logging.getLogger(__name__)
 
 
 class MeAPIView(APIView):
@@ -88,12 +92,12 @@ class ContractViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (models.Contract.objects.all()
                 .select_related('company', 'customer')
                 .prefetch_related(
-                    Prefetch('performance_types', queryset=(models.PerformanceType.objects
-                                                            .non_polymorphic())),
-                    Prefetch('attachments', queryset=(models.Attachment.objects
-                                                      .non_polymorphic())),
-                    Prefetch('contract_groups', queryset=(models.ContractGroup.objects
-                                                          .non_polymorphic())))
+        Prefetch('performance_types', queryset=(models.PerformanceType.objects
+                                                .non_polymorphic())),
+        Prefetch('attachments', queryset=(models.Attachment.objects
+                                          .non_polymorphic())),
+        Prefetch('contract_groups', queryset=(models.ContractGroup.objects
+                                              .non_polymorphic())))
                 .distinct())
 
     def get_queryset(self):
@@ -190,7 +194,8 @@ class AttachmentViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         # Don't allow deleting of attachment if the attached leave/timesheet is already closed/approved/rejected
         if (models.Timesheet.objects.filter(~Q(status=models.STATUS_ACTIVE), attachments=instance).count() or
-            models.Leave.objects.filter(Q(status=models.STATUS_APPROVED) | Q(status=models.STATUS_REJECTED), attachments=instance)):
+                models.Leave.objects.filter(Q(status=models.STATUS_APPROVED) | Q(status=models.STATUS_REJECTED),
+                                            attachments=instance)):
             raise ValidationError(_('Attachments linked to finalized timesheets or leaves cannot be deleted.'))
         return super().perform_destroy(instance)
 
@@ -273,7 +278,6 @@ class PerformanceImportAPIView(APIView):
             }
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-        
         data['results'] += redmine_data
         data['count'] = len(data['results'])
 
@@ -319,3 +323,52 @@ class RangeInfoAPIView(APIView):
         data = data[user.id]
 
         return Response(data)
+
+
+class EventsAPIView(APIView):
+    """Get events."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, format=None):
+        """Defines the entrypoint of the retrieval."""
+        from_date = dateutil.parser.parse(request.query_params.get('from', None))
+        until_date = dateutil.parser.parse(request.query_params.get('until', None))
+
+        events = (
+            models.Event.objects.all()
+            .filter(
+                (Q(starts_at__range=(from_date, until_date)) | Q(ends_at__range=(from_date, until_date))) |
+                (Q(starts_at__lte=from_date) & Q(ends_at__gte=until_date)) |
+                (Q(starts_at__gte=from_date) & Q(ends_at__lte=until_date))
+            )
+            .order_by('starts_at')
+        )
+
+        data = serializers.EventSerializer(events, many=True).data
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class QuotesAPIView(APIView):
+    """Get quotes."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, format=None):
+        """Defines the entrypoint of the retrieval."""
+
+        quotes = (
+            models.Quote.objects.all()
+        )
+
+        quotes = [quote for quote in quotes if quote.is_today]
+
+        if len(quotes) == 0:
+            quotes = (
+                models.Quote.objects.filter(Q(recurrences__exact=''))
+            )
+
+        data = serializers.QuoteSerializer(quotes, many=True).data
+
+        return Response(data, status=status.HTTP_200_OK)
