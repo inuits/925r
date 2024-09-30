@@ -1,0 +1,78 @@
+services:
+
+  ldap:
+    image: osixia/openldap:1.1.7
+    networks:
+      ninetofiver:
+
+  mysql:
+    image: mysql:${MYSQL_VERSION?}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD?}
+      - MYSQL_DATABASE=${MYSQL_DATABASE?}
+      - MYSQL_USER=${MYSQL_USER?}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD?}
+    command:
+      [
+        'mysqld',
+        '--character-set-server=utf8mb4',
+        '--collation-server=utf8mb4_unicode_ci',
+        '--wait_timeout=28800', # needed to be able to add test data
+        '--max_allowed_packet=128M', # needed to be able to add test data
+      ]
+    # Fix memory leak issue on some systems when LimitCORE=infinity (containerd)
+    # @see https://github.com/docker-library/mysql/issues/873#issuecomment-1909948195
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    networks:
+      ninetofiver:
+    ports:
+      - "3306"
+    volumes:
+      - "mysql-data:/var/lib/mysql"
+    healthcheck:
+      test: [ "CMD-SHELL", "MYSQL_PWD=$${MYSQL_PASSWORD} mysqladmin --host=127.0.0.1 --user=$${MYSQL_USER} ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 2
+      start_period: 0s
+
+  ninetofiver:
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE?}
+      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION?}
+      - CFG_FILE_PATH=${CFG_FILE_PATH?}
+    command: |
+      bash -c "
+        python manage.py migrate
+        echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('${SUPERUSER_USERNAME?}', '${SUPERUSER_EMAIL?}', '${SUPERUSER_PASSWORD?}')\" | python manage.py shell || true
+        echo \"from oauth2_provider.models import Application; from django.contrib.auth import get_user_model; User = get_user_model(); client = Application.objects.create(user=User.objects.filter(is_staff=True)[0], name='${API_APPLICATION_NAME?}', client_id='${API_APPLICATION_CLIENT_ID?}', client_secret='${API_APPLICATION_CLIENT_SECRET?}', authorization_grant_type=Application.GRANT_PASSWORD)\" | python manage.py shell || true
+        python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - ninetofiver-files:/code
+    depends_on:
+      ldap:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+
+volumes:
+
+  mysql-data:
+    name: "mysql-${MYSQL_VERSION?}-data"
+
+  ninetofiver-files:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD?}
+
+networks:
+
+  ninetofiver:

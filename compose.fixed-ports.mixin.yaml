@@ -1,0 +1,9 @@
+services:
+
+  mysql:
+    ports:
+      - "${MYSQL_EXPOSED_PORT:?}:3306"
+
+  ninetofiver:
+    ports:
+      - "${NINETOFIVER_EXPOSED_PORT:?}:8000"
