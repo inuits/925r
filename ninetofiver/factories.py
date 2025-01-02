@@ -195,6 +195,7 @@ class SupportContractFactory(ContractFactory):
         model = models.SupportContract
 
     day_rate = factory.LazyFunction(lambda: random.randint(0, 9999))
+    complexity = factory.LazyFunction(lambda: random.choice([1, 2, 4, 10, 20, 50, 100, 200]))
 
 
 class ContractRoleFactory(factory.django.DjangoModelFactory):

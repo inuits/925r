@@ -530,6 +530,9 @@ class SupportContractSerializer(BasicContractSerializer):
 
     class Meta(BasicContractSerializer.Meta):
         model = models.SupportContract
+        fields = BasicContractSerializer.Meta.fields + (
+            'complexity',
+        )
 
 
 class ContractSerializer(BasePolymorphicSerializer):

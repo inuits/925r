@@ -855,6 +855,12 @@ class SupportContract(Contract):
         ]
     )
     fixed_fee_period = models.CharField(blank=True, null=True, max_length=10, choices=FIXED_FEE_PERIOD_CHOICES)
+    complexity = models.IntegerField(
+        blank=False,
+        null=False,
+        default=1,
+        help_text="The chosen value will be used as a factor to divide costs based on the number of contracts and their relative \"Complexity.\""
+    )
 
     def perform_additional_validation(self):
         """Perform additional validation on the object."""

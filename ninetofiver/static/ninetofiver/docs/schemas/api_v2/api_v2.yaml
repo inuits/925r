@@ -266,6 +266,12 @@ components:
     SupportContract:
       allOf:
         - $ref: '#/components/schemas/Contract'
+        - type: object
+          properties:
+            complexity:
+              type: number
+              format: integer
+              enum: [1, 2, 4, 10, 20, 50, 100, 200]
     ProjectContract:
       allOf:
         - $ref: '#/components/schemas/Contract'

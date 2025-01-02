@@ -496,6 +496,7 @@ class ContractResource(ModelResource):
             'supportcontract__fixed_fee',
             'supportcontract__fixed_fee_period',
             'supportcontract__day_rate',
+            'supportcontract__complexity',
             'polymorphic_ctype__model',
         )
         export_order = (
@@ -516,6 +517,7 @@ class ContractResource(ModelResource):
             'supportcontract__fixed_fee',
             'supportcontract__fixed_fee_period',
             'supportcontract__day_rate',
+            'supportcontract__complexity',
             'polymorphic_ctype__model',
         )
 
@@ -573,6 +575,12 @@ class ContractParentAdmin(ExportMixin, PolymorphicParentModelAdmin):
             return real_obj.day_rate
         return None
 
+    def complexity(obj):
+        real_obj = obj.get_real_instance()
+        if real_obj.__class__ is models.SupportContract:
+            return real_obj.complexity
+        return None
+
     def item_actions(obj):
         """Actions."""
         actions = []
@@ -593,7 +601,7 @@ class ContractParentAdmin(ExportMixin, PolymorphicParentModelAdmin):
     )
     list_display = ('__str__', 'name', 'company', 'customer', contract_users, contract_user_groups, performance_type,
                     'active', 'starts_at', 'ends_at', 'description', attachments, fixed_fee, fixed_fee_period,
-                    duration, day_rate, item_actions)
+                    duration, day_rate, item_actions, complexity)
 
     list_filter = (
         PolymorphicChildModelFilter,
