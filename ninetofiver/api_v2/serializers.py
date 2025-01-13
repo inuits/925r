@@ -505,6 +505,7 @@ class BasicContractSerializer(BasicSerializer):
             'active',
             'starts_at',
             'ends_at',
+            'external_only',
         )
 
 
