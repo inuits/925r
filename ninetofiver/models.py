@@ -758,7 +758,7 @@ class Contract(BaseModel):
     contract_groups = models.ManyToManyField(ContractGroup, blank=True)
     attachments = models.ManyToManyField(Attachment, blank=True)
     redmine_id = models.CharField(max_length=255, blank=True, null=True)
-    external_only = models.BooleanField(default=False)
+    external_only = models.BooleanField(default=False, help_text="Enabling this property will disable manual Yayata input for this contract.")
     contract_users = models.ManyToManyField(User, through='ContractUser')
 
     def __str__(self):
@@ -1142,6 +1142,9 @@ class Performance(BaseModel):
         # Verify whether the day is valid for the month/year of the timesheet
         if (self.date.month != self.timesheet.month) or (self.date.year != self.timesheet.year):
             raise ValidationError({'date': _('This date is not part of the given timesheet.')})
+
+        if self.contract.external_only and not self.redmine_id:
+            raise ValidationError({'redmine_id': _('Redmine ID should be set for external only contract\'s performance log.')})
 
     def get_absolute_url_view_name(self):
         """Get the view name used for generating an absolute URL."""
