@@ -859,7 +859,10 @@ class SupportContract(Contract):
         blank=False,
         null=False,
         default=1,
-        help_text="The chosen value will be used as a factor to divide costs based on the number of contracts and their relative \"Complexity.\""
+        help_text="The chosen value will be used as a factor to divide costs based on the number of contracts and their relative \"Complexity.\"",
+        validators=[
+            validators.MinValueValidator(1),
+        ]
     )
 
     def perform_additional_validation(self):
