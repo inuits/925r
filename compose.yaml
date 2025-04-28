@@ -1,0 +1,26 @@
+services:
+
+  ninetofiver:
+    build: .
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE?}
+      - DJANGO_CONFIGURATION=${DJANGO_CONFIGURATION?}
+      - CFG_FILE_PATH=${CFG_FILE_PATH?}
+      - MYSQL_DB=${MYSQL_DATABASE?}
+      - MYSQL_USER=${MYSQL_USER?}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD?}
+      - PYTHONDONTWRITEBYTECODE=${PYTHONDONTWRITEBYTECODE?}
+      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED?}
+    command: |
+      bash -c "
+        python manage.py migrate
+        python manage.py runserver 0.0.0.0:8000
+      "
+    networks:
+      ninetofiver:
+    ports:
+      - "8000"
+
+networks:
+
+  ninetofiver:

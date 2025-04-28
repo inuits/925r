@@ -1,0 +1,15 @@
+services:
+
+  ninetofiver:
+    networks:
+      traefik:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME?}-ninetofiver.rule=Host(`ninetofiver.${PROJECT_DOMAIN_SUFFIX?}`)"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME?}-ninetofiver.loadbalancer.server.port=8000"
+
+networks:
+
+  traefik:
+    external: true

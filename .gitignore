@@ -15,7 +15,8 @@ docs/_build/
 !/media/.gitkeep
 *.log
 .tox/
-.env
 .coverage
 /scripts/docker/mysql-init/
 test_results.html
+
+/.env
