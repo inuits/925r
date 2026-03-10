@@ -905,6 +905,14 @@ paths:
           in: query
           schema:
             type: string
+        - name: customer__name
+          in: query
+          schema:
+            type: string
+        - name: customer__name__icontains
+          in: query
+          schema:
+            type: string
         - name: type
           in: query
           schema:
