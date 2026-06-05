@@ -216,11 +216,31 @@ class HolidayAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+class LeaveTypeForm(forms.ModelForm):
+    """Leave type form."""
+
+    class Meta:
+        model = models.LeaveType
+        fields = '__all__'
+        widgets = {
+            'visible_for_countries': admin.widgets.FilteredSelectMultiple(
+                verbose_name=_('countries'), is_stacked=False),
+        }
+
+
 @admin.register(models.LeaveType)
 class LeaveTypeAdmin(SortableAdmin):
     """Leave type admin."""
 
-    list_display = ('__str__', 'name', 'description', 'overtime', 'sickness')
+    form = LeaveTypeForm
+    list_display = ('__str__', 'name', 'description', 'overtime', 'sickness',
+                    'auto_approve', 'visible_countries')
+    list_filter = ('auto_approve', 'overtime', 'sickness')
+
+    @admin.display(description='Show leaves to those user countries')
+    def visible_countries(self, obj):
+        """Render the (multiple) country field as a readable string."""
+        return ', '.join(country.name for country in obj.visible_for_countries) or '-'
 
 
 class LeaveDateInline(admin.TabularInline):
