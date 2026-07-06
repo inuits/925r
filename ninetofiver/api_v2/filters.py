@@ -111,6 +111,7 @@ class ContractFilter(FilterSet):
         fields = {
             'name': ['exact', 'icontains'],
             'active': ['exact',],
+            'customer__name': ['exact', 'icontains'],
         }
 
 
