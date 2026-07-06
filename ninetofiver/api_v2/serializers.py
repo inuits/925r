@@ -245,13 +245,16 @@ class MeSerializer(UserSerializer):
         )
 
 
-class LeaveTypeSerializer(BaseSerializer):
+class LeaveTypeSerializer(CountryFieldMixin, BaseSerializer):
     """Leave type serializer."""
 
     class Meta(BaseSerializer.Meta):
         model = models.LeaveType
         fields = BaseSerializer.Meta.fields + (
             'name',
+            'auto_approve',
+            'message',
+            'visible_for_countries',
         )
 
 
@@ -387,8 +390,10 @@ class LeaveSerializer(BasicSerializer):
         ends_at = timezone.make_aware(ends_at) if not timezone.is_aware(ends_at) else ends_at
         ends_at = ends_at.replace(second=0)
 
-        # If the leave isn't pending/draft, NOPE
-        if leave.status not in [models.STATUS_PENDING, models.STATUS_DRAFT]:
+        # If the leave isn't pending/draft, NOPE — unless it's an auto-approve type, whose
+        # pre-save signal already flipped a freshly-created leave to APPROVED before we got here.
+        auto_approve = bool(leave.leave_type_id and leave.leave_type.auto_approve)
+        if leave.status not in [models.STATUS_PENDING, models.STATUS_DRAFT] and not auto_approve:
             raise serializers.ValidationError(_('Leave status should be draft/pending before it can be updated.'))
 
         # If the end date comes before the start date, NOPE

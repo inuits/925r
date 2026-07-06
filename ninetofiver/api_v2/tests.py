@@ -275,6 +275,64 @@ class LeaveTypeAPITestCase(testcases.ReadRESTAPITestCaseMixin, testcases.BaseRES
     }
 
 
+class LeaveTypeVisibilityTests(AuthenticatedAPITestCase):
+    """Leave types are filtered by the requesting user's country."""
+
+    def setUp(self):
+        super().setUp()
+        self.user.userinfo.country = 'CZ'
+        self.user.userinfo.save()
+
+    def _visible_ids(self):
+        response = self.client.get(reverse('ninetofiver_api_v2:leavetype-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return [lt['id'] for lt in response.data['results']]
+
+    def test_unrestricted_type_is_visible_to_everyone(self):
+        """A type with no country restriction is visible to everyone."""
+        leave_type = factories.LeaveTypeFactory(visible_for_countries=[])
+        self.assertIn(leave_type.id, self._visible_ids())
+
+    def test_type_for_user_country_is_visible(self):
+        """A type listing the user's country is visible."""
+        leave_type = factories.LeaveTypeFactory(visible_for_countries=['CZ', 'UA'])
+        self.assertIn(leave_type.id, self._visible_ids())
+
+    def test_type_for_other_country_is_hidden(self):
+        """A type restricted to other countries is hidden."""
+        leave_type = factories.LeaveTypeFactory(visible_for_countries=['BE'])
+        self.assertNotIn(leave_type.id, self._visible_ids())
+
+    def test_serializer_exposes_new_fields(self):
+        """The new fields are exposed on the leave type endpoint."""
+        leave_type = factories.LeaveTypeFactory(
+            visible_for_countries=['CZ'], auto_approve=True, message='<a href="#">Book externally</a>')
+        response = self.client.get(
+            reverse('ninetofiver_api_v2:leavetype-detail', kwargs={'pk': leave_type.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['auto_approve'])
+        self.assertEqual(response.data['message'], '<a href="#">Book externally</a>')
+        self.assertIn('CZ', response.data['visible_for_countries'])
+
+
+class LeaveAutoApproveTests(AuthenticatedAPITestCase):
+    """Leaves of an ``auto_approve`` type are approved on save."""
+
+    def test_auto_approve_type_marks_leave_approved(self):
+        leave_type = factories.LeaveTypeFactory(auto_approve=True)
+        leave = models.Leave.objects.create(
+            user=self.user, leave_type=leave_type, status=models.STATUS_PENDING)
+        leave.refresh_from_db()
+        self.assertEqual(leave.status, models.STATUS_APPROVED)
+
+    def test_normal_type_keeps_pending_status(self):
+        leave_type = factories.LeaveTypeFactory(auto_approve=False)
+        leave = models.Leave.objects.create(
+            user=self.user, leave_type=leave_type, status=models.STATUS_PENDING)
+        leave.refresh_from_db()
+        self.assertEqual(leave.status, models.STATUS_PENDING)
+
+
 class LocationAPITestCase(testcases.ReadRESTAPITestCaseMixin, testcases.BaseRESTAPITestCase, ModelTestMixin):
     """Location API test case."""
 

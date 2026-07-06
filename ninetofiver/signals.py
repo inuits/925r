@@ -40,8 +40,29 @@ def on_user_post_save(sender, instance, created=False, **kwargs):
 
 
 @receiver(pre_save, sender=models.Leave)
+def on_leave_auto_approve(sender, instance, **kwargs):
+    """Auto-approve leaves whose type is flagged ``auto_approve``.
+
+    Leaves of an auto-approve bypass the pending/approval flow and are
+    marked approved straight away.
+
+    This intercepts the save that ``LeaveSerializer.apply_date_range_to_leave`` performs.
+
+    No approval e-mail is sent for these.
+    """
+    if (instance.leave_type_id
+            and instance.status in [models.STATUS_DRAFT, models.STATUS_PENDING]
+            and instance.leave_type.auto_approve):
+        instance.status = models.STATUS_APPROVED
+
+
+@receiver(pre_save, sender=models.Leave)
 def on_leave_pre_save(sender, instance, created=False, **kwargs):
     """Process pre-save event for a leave."""
+    # Auto-approved (externally-booked) leaves - must not trigger the standard approval e-mail
+    if instance.leave_type_id and instance.leave_type.auto_approve:
+        return
+
     if (not created) and instance.is_dirty():
         dirty = instance.get_dirty_fields()
 

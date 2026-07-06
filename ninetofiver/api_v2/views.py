@@ -43,11 +43,31 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class LeaveTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    """List or retrieve leave types."""
+    """List or retrieve leave types.
+
+    Leave types are filtered by the requesting user's country: a type is only
+    returned when its `visible_for_countries` is empty (visible to everyone) or
+    contains the user's country (`userinfo.country`).
+    """
 
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.LeaveTypeSerializer
     queryset = models.LeaveType.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Types with no country restriction are visible to everyone.
+        visible = Q(visible_for_countries='')
+
+        userinfo = getattr(self.request.user, 'userinfo', None)
+        country = str(userinfo.country) if (userinfo and userinfo.country) else None
+        if country:
+            # `visible_for_countries` stores a comma-separated list of 2-letter
+            # codes; a 2-letter code can only match its own token.
+            visible |= Q(visible_for_countries__contains=country)
+
+        return queryset.filter(visible)
 
 
 class ContractRoleViewSet(viewsets.ReadOnlyModelViewSet):

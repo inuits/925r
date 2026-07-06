@@ -538,6 +538,16 @@ class LeaveType(SortableMixin, BaseModel):
     order = models.PositiveIntegerField(default=0, editable=False, db_index=True)
     overtime = models.BooleanField(default=False, verbose_name='Overtime compensation')
     sickness = models.BooleanField(default=False)
+    auto_approve = models.BooleanField(
+        default=False, verbose_name='Auto approve',
+        help_text='Bypass the approval flow and mark leaves of this type as approved immediately on save.')
+    message = models.TextField(
+        max_length=255, blank=True, null=True,
+        help_text='Trusted HTML shown to the user when this leave type is selected '
+                  '(e.g. a link to an external booking system).')
+    visible_for_countries = CountryField(
+        multiple=True, blank=True, verbose_name='Show leaves to those user countries',
+        help_text='Only users from these countries see this leave type. Leave empty to show it to everyone.')
 
     class Meta(BaseModel.Meta):
         ordering = ['order']
