@@ -25,6 +25,7 @@ router.register(r'contracts', views.ContractViewSet)
 router.register(r'contract_users', views.ContractUserViewSet)
 router.register(r'whereabouts', views.WhereaboutViewSet)
 router.register(r'performances', views.PerformanceViewSet)
+router.register(r'admin/activity_performances', views.AdminActivityPerformanceViewSet, basename='admin-activity-performance')
 router.register(r'attachments', views.AttachmentViewSet)
 
 # Wire up our API using automatic URL routing.

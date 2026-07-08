@@ -625,6 +625,27 @@ class ActivityPerformanceSerializer(BasicPerformanceSerializer):
         )
 
 
+class AdminActivityPerformanceSerializer(ActivityPerformanceSerializer):
+    """Activity performance serializer exposing the performing user (super-admin only)."""
+
+    user = serializers.SerializerMethodField()
+
+    class Meta(ActivityPerformanceSerializer.Meta):
+        fields = ActivityPerformanceSerializer.Meta.fields + (
+            'user',
+        )
+
+    def get_user(self, obj):
+        user = obj.timesheet.user
+        return {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+
+
 class StandbyPerformanceSerializer(BasicPerformanceSerializer):
     """Standby performance serializer."""
 
