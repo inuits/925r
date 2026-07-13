@@ -3,7 +3,7 @@ from django.contrib.auth import models as auth_models
 from django_countries.serializers import CountryFieldMixin
 from django.utils.translation import gettext_lazy as _
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils import timezone
 from decimal import Decimal
 import dateutil
@@ -498,6 +498,7 @@ class BasicContractSerializer(BasicSerializer):
     performance_types = MinimalPerformanceTypeSerializer(many=True)
     customer = MinimalCompanySerializer()
     company = MinimalCompanySerializer()
+    estimated_hours = serializers.SerializerMethodField()
 
     class Meta(BasicSerializer.Meta):
         model = models.Contract
@@ -511,7 +512,11 @@ class BasicContractSerializer(BasicSerializer):
             'starts_at',
             'ends_at',
             'external_only',
+            'estimated_hours',
         )
+
+    def get_estimated_hours(self, obj):
+        return obj.contractestimate_set.aggregate(total=Sum('duration'))['total']
 
 
 class ProjectContractSerializer(BasicContractSerializer):
@@ -519,6 +524,9 @@ class ProjectContractSerializer(BasicContractSerializer):
 
     class Meta(BasicContractSerializer.Meta):
         model = models.ProjectContract
+        fields = BasicContractSerializer.Meta.fields + (
+            'fixed_fee',
+        )
 
 
 class ConsultancyContractSerializer(BasicContractSerializer):
@@ -528,6 +536,7 @@ class ConsultancyContractSerializer(BasicContractSerializer):
         model = models.ConsultancyContract
         fields = BasicContractSerializer.Meta.fields + (
             'duration',
+            'day_rate',
         )
 
 
@@ -538,6 +547,8 @@ class SupportContractSerializer(BasicContractSerializer):
         model = models.SupportContract
         fields = BasicContractSerializer.Meta.fields + (
             'complexity',
+            'fixed_fee',
+            'day_rate',
         )
 
 
@@ -625,6 +636,35 @@ class ActivityPerformanceSerializer(BasicPerformanceSerializer):
         )
 
 
+def _admin_user_payload(user):
+    return {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+    }
+
+
+class AdminActivityPerformanceSerializer(ActivityPerformanceSerializer):
+    """Activity performance serializer exposing the performing user (super-admin only)."""
+
+    user = serializers.SerializerMethodField()
+    multiplier = serializers.SerializerMethodField()
+
+    class Meta(ActivityPerformanceSerializer.Meta):
+        fields = ActivityPerformanceSerializer.Meta.fields + (
+            'user',
+            'multiplier',
+        )
+
+    def get_multiplier(self, obj):
+        return obj.performance_type.multiplier if obj.performance_type else None
+
+    def get_user(self, obj):
+        return _admin_user_payload(obj.timesheet.user)
+
+
 class StandbyPerformanceSerializer(BasicPerformanceSerializer):
     """Standby performance serializer."""
 
@@ -640,6 +680,52 @@ class PerformanceSerializer(BasePolymorphicSerializer):
             models.ActivityPerformance.__name__: ActivityPerformanceSerializer,
             models.StandbyPerformance.__name__: StandbyPerformanceSerializer,
         }
+
+
+class AdminStandbyPerformanceSerializer(StandbyPerformanceSerializer):
+    """Standby performance serializer exposing the performing user (super-admin only)."""
+
+    user = serializers.SerializerMethodField()
+
+    class Meta(StandbyPerformanceSerializer.Meta):
+        fields = StandbyPerformanceSerializer.Meta.fields + (
+            'user',
+        )
+
+    def get_user(self, obj):
+        return _admin_user_payload(obj.timesheet.user)
+
+
+class AdminPerformanceSerializer(BasePolymorphicSerializer):
+    """Polymorphic performance serializer across all types (super-admin only)."""
+
+    def get_serializer_map(self):
+        return {
+            models.ActivityPerformance.__name__: AdminActivityPerformanceSerializer,
+            models.StandbyPerformance.__name__: AdminStandbyPerformanceSerializer,
+        }
+
+
+class AdminInvoiceSerializer(BasicSerializer):
+    """Invoice with its total and contract, for migrating invoiced history (super-admin only)."""
+
+    contract = MinimalContractSerializer()
+    total_amount = serializers.SerializerMethodField()
+
+    class Meta(BasicSerializer.Meta):
+        model = models.Invoice
+        fields = BasicSerializer.Meta.fields + (
+            'contract',
+            'reference',
+            'description',
+            'date',
+            'period_starts_at',
+            'period_ends_at',
+            'total_amount',
+        )
+
+    def get_total_amount(self, obj):
+        return obj.get_total_amount()
 
 
 class AttachmentSerializer(BasicSerializer):

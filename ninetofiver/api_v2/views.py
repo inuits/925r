@@ -124,6 +124,54 @@ class ContractViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.filter(contractuser__user=self.request.user)
 
 
+class IsSuperUser(permissions.BasePermission):
+    """Allow access only to super administrators."""
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_superuser)
+
+
+class AdminPerformanceViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """List performances of every type across all users (super-admin only).
+
+    Unlike PerformanceViewSet this is not scoped to the requesting user, so it
+    can migrate a contract's full time-entry history. Filter with ?contract=<id>.
+    """
+
+    permission_classes = (IsSuperUser,)
+    serializer_class = serializers.AdminPerformanceSerializer
+    queryset = (models.Performance.objects.all()
+                .select_related('timesheet', 'timesheet__user', 'contract', 'contract__customer')
+                .order_by('id'))
+
+    def get_queryset(self):
+        queryset = self.queryset
+        contract = self.request.query_params.get('contract')
+        if contract:
+            queryset = queryset.filter(contract_id=contract)
+        return queryset
+
+
+class AdminInvoiceViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """List invoices across all contracts (super-admin only), for migrating invoiced history.
+
+    Filter with ?contract=<id>.
+    """
+
+    permission_classes = (IsSuperUser,)
+    serializer_class = serializers.AdminInvoiceSerializer
+    queryset = (models.Invoice.objects.all()
+                .select_related('contract', 'contract__customer')
+                .order_by('id'))
+
+    def get_queryset(self):
+        queryset = self.queryset
+        contract = self.request.query_params.get('contract')
+        if contract:
+            queryset = queryset.filter(contract_id=contract)
+        return queryset
+
+
 class ContractUserViewSet(viewsets.ReadOnlyModelViewSet):
     """List or retrieve contract users."""
 
