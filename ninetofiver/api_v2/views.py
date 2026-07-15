@@ -172,6 +172,24 @@ class AdminInvoiceViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return queryset
 
 
+class AdminContractViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """List contracts across all users (super-admin only)."""
+
+    permission_classes = (IsSuperUser,)
+    serializer_class = serializers.ContractSerializer
+    filterset_class = filters.ContractFilter
+    queryset = (models.Contract.objects.all()
+                .select_related('company', 'customer')
+                .prefetch_related(
+        Prefetch('performance_types', queryset=(models.PerformanceType.objects
+                                                .non_polymorphic())),
+        Prefetch('attachments', queryset=(models.Attachment.objects
+                                          .non_polymorphic())),
+        Prefetch('contract_groups', queryset=(models.ContractGroup.objects
+                                              .non_polymorphic())))
+                .distinct())
+
+
 class ContractUserViewSet(viewsets.ReadOnlyModelViewSet):
     """List or retrieve contract users."""
 

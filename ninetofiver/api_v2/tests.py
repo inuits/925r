@@ -510,3 +510,26 @@ class PerformanceAPITestCase(testcases.ReadWriteRESTAPITestCaseMixin, testcases.
     def _update_check_db(self, obj, data=None, results=None):
         setattr(obj, 'type', 'ActivityPerformance')
         super()._update_check_db(obj, data=data, results=results)
+
+
+class AdminContractAPITestCase(testcases.ListAPITestCaseMixin, testcases.BaseRESTAPITestCase, ModelTestMixin):
+    """Admin contract API test case."""
+
+    base_name = 'ninetofiver_api_v2:admin-contract'
+    factory_class = factories.ProjectContractFactory
+    user_factory = factories.AdminFactory
+
+    def setUp(self):
+        self.company = factories.InternalCompanyFactory.create()
+        self.customer = factories.CompanyFactory.create()
+        super().setUp()
+
+    def get_object(self, factory):
+        return factory.create(company=self.company, customer=self.customer)
+
+    def test_non_superuser_forbidden(self):
+        """Test that a non-superuser cannot list admin contracts."""
+        regular_user = factories.UserFactory.create()
+        self.client.force_authenticate(regular_user)
+        response = self.client.get(reverse('ninetofiver_api_v2:admin-contract-list'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
