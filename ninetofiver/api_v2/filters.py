@@ -125,6 +125,7 @@ class ContractUserFilter(FilterSet):
         model = models.ContractUser
         fields = {
             'contract': ['exact'],
+            'user__email': ['exact', 'iexact'],
         }
 
 

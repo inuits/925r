@@ -577,6 +577,20 @@ class ContractUserSerializer(BasicSerializer):
         )
 
 
+class AdminContractUserSerializer(ContractUserSerializer):
+    """Contract user serializer exposing the assigned user (super-admin only)."""
+
+    user = serializers.SerializerMethodField()
+
+    class Meta(ContractUserSerializer.Meta):
+        fields = ContractUserSerializer.Meta.fields + (
+            'user',
+        )
+
+    def get_user(self, obj):
+        return _admin_user_payload(obj.user)
+
+
 class WhereaboutSerializer(BasicSerializer):
     """Whereabout serializer."""
 
