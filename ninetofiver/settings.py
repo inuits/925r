@@ -44,7 +44,9 @@ class Base(Configuration):
             with open(CFG_FILE_PATH, 'r') as f:
                 # https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
                 data = yaml.safe_load(f)
-        except BaseException:
+        except FileNotFoundError:
+            # The config file is optional (e.g. in dev). Any other error (bad YAML,
+            # permissions, ...) should propagate instead of being silently ignored.
             pass
 
         if data:

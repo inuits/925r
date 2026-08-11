@@ -6,6 +6,7 @@ from calendar import monthrange
 from importlib import import_module
 
 from dateutil.relativedelta import relativedelta
+from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail as base_send_mail
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -24,12 +25,23 @@ def get_django_configuration():
     env = get_django_environment()
 
     env_map = {
+        'dev': 'Dev',
         'staging': 'Stag',
         'demo': 'Demo',
         'production': 'Prod',
     }
 
-    return env_map.get(env, 'Dev')
+    if env not in env_map:
+        # 'dev' (the default used when ENVIRONMENT is genuinely unset) is an explicit key
+        # in env_map above, so we only get here when ENVIRONMENT was explicitly set to a
+        # value we don't recognize. Fail loudly instead of silently booting with Dev's
+        # debug settings.
+        raise ImproperlyConfigured(
+            "Unrecognized ENVIRONMENT value '%s'. Valid options are: %s."
+            % (env, ', '.join(sorted(env_map.keys())))
+        )
+
+    return env_map[env]
 
 
 def str_import(string):
