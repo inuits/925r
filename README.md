@@ -1,10 +1,10 @@
 ninetofiver
 ===========
 
-[![Build Status](https://travis-ci.org/kalmanolah/925r.svg?branch=master)](https://travis-ci.org/kalmanolah/925r)
-[![Coverage Status](https://coveralls.io/repos/github/kalmanolah/925r/badge.svg?branch=master)](https://coveralls.io/github/kalmanolah/925r?branch=master)
-[![GitHub issues](https://img.shields.io/github/issues/kalmanolah/925r.svg)](https://shields.io)
-[![License](https://img.shields.io/github/license/kalmanolah/925r.svg)](https://shields.io)
+[![Build Status](https://github.com/inuits/925r/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/inuits/925r/actions/workflows/tests.yml)
+[![Coverage Status](https://coveralls.io/repos/github/inuits/925r/badge.svg?branch=master)](https://coveralls.io/github/inuits/925r?branch=master)
+[![GitHub issues](https://img.shields.io/github/issues/inuits/925r.svg)](https://shields.io)
+[![License](https://img.shields.io/github/license/inuits/925r.svg)](https://shields.io)
 
 ninetofiver (or 925r) is a free and open source time and leave tracking application.
 
