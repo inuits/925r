@@ -1,0 +1,61 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: ninetofiver
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -prootpw"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DB: ninetofiver
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpw
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Matches the python version pinned by Pipfile's [requires] and tox.ini's envlist (py39),
+      # which is what the old .travis.yml used too.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pipenv'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev libldap2-dev libsasl2-dev libssl-dev default-libmysqlclient-dev gcc pkg-config
+
+      # Same install/script steps as the old .travis.yml: pip install tox coveralls; tox
+      - name: Install tox and coveralls
+        run: pip install tox coveralls
+
+      - name: Run tests via tox
+        run: tox
+
+      # Same as the old .travis.yml's `after_success: coveralls` — only runs when the tests
+      # passed, and a failed upload doesn't fail the job (Travis's after_success semantics).
+      # Requires a COVERALLS_REPO_TOKEN secret set on the repo.
+      - name: Upload coverage to Coveralls
+        if: success()
+        continue-on-error: true
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: coveralls
